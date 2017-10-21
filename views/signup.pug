@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  div(class='card')
+  
+    mixin input(title, type, name)
+      div(class='input-field')
+        label(for=name)=title
+        input(class='validate' type=type, required, autocomplete='off', name=name, id=name)
+  
+  
+    form(action='/create_user' method='post')
+      div(class='card-content')
+        h4 Create an Account
+        +input('First name', 'text', 'first_name')
+        +input('Last name', 'text', 'second_name')
+        +input('Email', 'email', 'email')
+        +input('Create password', 'password', 'password')
+      div(class='card-action')
+        button(type='submit' class='btn waves-effect waves-light black') Create account
+          i(class='material-icons right') send
+  a(class='waves-effect waves-black btn-flat' href='/') Back

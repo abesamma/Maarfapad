@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  div(class='card')
+
+    form(action='/wiki/home' method='post')
+      div(class='card-content')
+        h4 Login
+        div(class='input-field')
+          label(for='email_field') Enter email address
+          input(class='validate' id='email_field' type='email' name='email')
+        div(class='input-field')
+          input(class='validate' id='password_field' type='password' name='password')
+          label(for='password_field') Enter password
+          a(href='/recovery') Forgot password?
+          p
+      div(class='card-action')
+        button(type='submit' class='btn waves-effect waves-light black') Continue
+          i(class='material-icons right') send
+        p(id='flash') #{message}
+  
+  a(class='waves-effect waves-black btn-flat' href='/') Back

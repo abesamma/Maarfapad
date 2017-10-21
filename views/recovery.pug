@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  div(class='card')
+  
+    form(action='/reset' method='post')
+      div(class='card-content')
+        h4 Recover password
+        div(class='input-field')
+          label(for='email_field') Enter your email address
+          input(class='validate' id='email_field' type='email' name='email' required)
+        button(type='submit' class='btn waves-effect waves-light black') Reset
+          i(class='material-icons right') send
+
+  a(class='waves-effect waves-black btn-flat' href='/login') Back

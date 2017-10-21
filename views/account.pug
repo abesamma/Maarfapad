@@ -1,0 +1,28 @@
+extends layout
+
+block content
+  div(class='card')
+    form(action='/change_email' method='POST')
+      div(class='card-content')
+        h4 Account details:
+        span(class='card-title') Your current email: #{emailaddress}
+        
+        div(class='input-field')
+          label(for='email_field') Enter new email address
+          input(class='validate' id='email_field' type='email' name='newemail' title='Changing your email will log you out of the current session' required)
+        button(type='submit' class='btn waves-effect waves-light black') Save email
+          i(class='material-icons right') send
+
+    form(action='/change_password' method='POST')
+      div(class='card-content')
+        div(class='input-field')
+          label(for='newpass_field') Enter new password
+          input(class='validate' id='newpass_field' type='password' name='newpass' required)
+        div(class='input-field')
+          label(for='verifypass_field') Verify new password
+          input(class='validate' id='verifypass_field' type='password' name='verifypass' required)
+        button(type='submit' class='btn waves-effect waves-light black') Save password
+          i(class='material-icons right') send
+  a(class='waves-effect waves-black btn-flat' href='/') Back to home wiki
+    
+  
