@@ -81,7 +81,7 @@ function onError(error) {
  */
 
 function onListening() {
-  var addr = 'http://maarfapad.cloudno.de'
+  var addr = server.address();
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;

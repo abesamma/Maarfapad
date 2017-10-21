@@ -2,7 +2,6 @@ var express = require('express');
 var path = require('path');
 var request = require('request');
 var shortid = require('shortid');
-var favicon = require('serve-favicon');
 var logger = require('morgan');
 var session = require('express-session');
 var MemoryStore = require('memorystore')(session);
@@ -34,8 +33,6 @@ app.use(helmet());
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use('/bower_components',express.static(__dirname + '/bower_components'));
 app.use('/wiki/favicon.ico',express.static(__dirname + '/public' + '/favicon.ico'));
 app.use(logger('dev'));
 app.use(bodyParser.text({ type: 'text/html',limit: 1000000000000 }));
