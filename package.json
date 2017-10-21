@@ -24,6 +24,7 @@
     "passport-local": "^1.0.0",
     "passport-local-authenticate": "^1.2.0",
     "pug": "~2.0.0-beta10",
+    "request": "^2.83.0",
     "serve-favicon": "~2.3.2",
     "shortid": "^2.2.6"
   }
