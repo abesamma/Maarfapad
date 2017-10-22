@@ -33,7 +33,6 @@ app.use(helmet());
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-app.use('/favicon.ico',express.static(__dirname + '/public' + '/favicon.ico'));
 app.use('/wiki/favicon.ico',express.static(__dirname + '/public' + '/favicon.ico'));
 app.use(logger('dev'));
 app.use(bodyParser.text({ type: 'text/html',limit: 1000000000000 }));
