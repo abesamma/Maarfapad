@@ -30,11 +30,6 @@ var db = nano.db.use('maarfapad');
 var app = express();
 app.use(helmet());
 
-setInterval(function(){
-  var heap = process.memoryUsage().heapUsed;
-  console.log(heap);
-},3000);
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
@@ -58,7 +53,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/8e778595/empty.html'
+const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/bf0f466f/empty.html'
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
