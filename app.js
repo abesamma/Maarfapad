@@ -58,7 +58,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/7a23adb7/empty.html'
+const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/8e778595/empty.html'
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
