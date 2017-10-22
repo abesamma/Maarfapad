@@ -359,13 +359,13 @@ app.put('/wiki/:name/:rev',function(req,res){
   }
 });
 
-app.get('/new_wiki/:wikiType/:wikiName/:rev',function(req,res){
+app.get('/:wikiType/:wikiName/:rev',function(req,res){
   // var type = req.params.wikiType + '.html'
   var name = req.params.wikiName;
   var revision = req.params.rev;
   if(req.user){
     var userid = req.user.id
-    request(EMPTY_URL,function(error,res,data){
+    request(EMPTY_URL,function(error,response,data){
       if(!error){
         db.attachment.insert(userid,name,data,'text/html',{rev: revision},function(err,body){
           if(!err){
@@ -374,6 +374,8 @@ app.get('/new_wiki/:wikiType/:wikiName/:rev',function(req,res){
             console.log(err);
           }
         });
+      }else{
+        console.log(error);
       }
     });
   }
