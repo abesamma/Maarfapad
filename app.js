@@ -35,7 +35,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 app.use('/wiki/favicon.ico',express.static(__dirname + '/public' + '/favicon.ico'));
 app.use(logger('dev'));
-app.use(bodyParser.text({ type: 'text/html',limit: 1000000000000 }));
+app.use(bodyParser.raw({ type: 'text/html',limit: '30000kb' }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
