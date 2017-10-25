@@ -22,6 +22,7 @@ var login = require('./routes/login');
 var account = require('./routes/account');
 var recovery = require('./routes/recovery');
 var notice = require('./routes/notice');
+var about = require('./routes/about');
 
 // prepare database drive
 var nano = require('nano')(config.database);
@@ -122,6 +123,7 @@ app.use('/login', login);
 app.use('/account', account);
 app.use('/recovery', recovery);
 app.use('/notice', notice);
+app.use('/about', about);
 
 // create a user account then redirect to index page
 app.post('/create_user',function(req,res,next){

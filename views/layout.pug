@@ -10,6 +10,18 @@ html
     link(rel='stylesheet' href='https://fonts.googleapis.com/css?family=Comfortaa')
     link(rel='icon' href='/favicon.ico')
   body
+  div(class='navbar-fixed')
+    nav
+      div(class='nav-wrapper black')
+        a(href='/about' class='brand-logo')
+          span(style='font-family: Comfortaa') μaarfapad
+        ul(id='nav-mobile' class='right hide-on-med-and-down')
+          li
+            a(href='/signup') Sign up
+          li
+            a(href='/login') Login
+          li
+            a(href='/about') About
   div(class='content')
     block content
   script(src='https://code.jquery.com/jquery-3.2.1.min.js')
