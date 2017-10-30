@@ -332,7 +332,6 @@ app.get('/wiki/:name',function(req,res){
     var userid = req.user.id
     db.attachment.get(userid,name,function(err,body){
       if(!err){
-          res.header('Content-Type','text/html');
           res.send(body);
       }
     });
