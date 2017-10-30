@@ -54,7 +54,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/bf0f466f/empty.html'
+const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/ff423897/empty.html'
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
@@ -130,7 +130,7 @@ app.post('/create_user',function(req,res,next){
   db.view('user','email',{include_docs: false},function(err,body){
     if(!err){
       // check user limit during testing period. To be removed later
-      if(body.total_rows != 1){
+      if(body.total_rows < 4){
         var id = shortid.generate();
         // check for account duplicate
         db.view('user','verify',{
@@ -144,7 +144,7 @@ app.post('/create_user',function(req,res,next){
                 from: 'info@maarfapad.xyz',
                 to: req.body.email,
                 subject: 'Maarfapad sign up',
-                html: `<p>You are all set! <a href='http://maarfapad.com'>Click here</a> to login</p>`
+                html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
               };
               // check if email address exists and can receive emails
               emailCheck(req.body.email)
@@ -153,8 +153,8 @@ app.post('/create_user',function(req,res,next){
                   // hash and salt pass
                   auth.hash(req.body.password,function(err,hashed){
                     req.body.password = hashed; // replace plain pass with hashed pass
-                    request(EMPTY_URL,function(error,res,data){
-                      if(res.statusMessage === 'OK'){
+                    request(EMPTY_URL,function(error,resp,data){
+                      if(resp.statusMessage === 'OK'){
                         if(!error){
                           db.multipart.insert(
                           req.body,
@@ -162,7 +162,16 @@ app.post('/create_user',function(req,res,next){
                           id,
                           function(err,body){
                             if(!err){
-                              return
+                              // email to confirm successful action
+                              return smtpTransport.sendMail(mailOptions,function(err,response){
+                                if(!err){
+                                  // redirect to login page if successful
+                                  res.redirect('/login');
+                                }else{
+                                  console.log(err);
+                                  res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                                }
+                              });
                             }
                           });
                         }else{
@@ -173,15 +182,6 @@ app.post('/create_user',function(req,res,next){
                         res.send(`<p>Something went wrong. Please try again later.</p><br><a href='/signup'>Go back</a>`);
                       }
                     });
-                  });
-                  smtpTransport.sendMail(mailOptions,function(err,response){
-                    if(!err){
-                      // redirect to login page if successful
-                      res.redirect('/login');
-                    }else{
-                      console.log(err);
-                      res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
-                    }
                   });
                 }else{
                   res.send(`<p>Something's wrong with the email you supplied. Please try again.</p><br><a href='/signup'>Go back</a>`)
@@ -362,17 +362,28 @@ app.get('/:wikiType/:wikiName/:rev',function(req,res){
   var revision = req.params.rev;
   if(req.user){
     var userid = req.user.id
-    request(EMPTY_URL,function(error,response,data){
-      if(!error){
-        db.attachment.insert(userid,name,data,'text/html',{rev: revision},function(err,body){
-          if(!err){
-            res.sendStatus(200);
-          }else{
-            console.log(err);
-          }
-        });
+    db.show('user','getUser',userid,function(err,body){
+      if(!err){
+        var wikiCount = Object.keys(body._attachments).length;
+        if(wikiCount === 2){
+          return res.sendStatus(204);
+        }else{
+          request(EMPTY_URL,function(error,response,data){
+            if(!error){
+              db.attachment.insert(userid,name,data,'text/html',{rev: revision},function(err,body){
+                if(!err){
+                  res.sendStatus(200);
+                }else{
+                  console.log(err);
+                }
+              });
+            }else{
+              console.log(error);
+            }
+          });
+        }
       }else{
-        console.log(error);
+        console.log(err);
       }
     });
   }
