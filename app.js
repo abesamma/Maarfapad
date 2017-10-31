@@ -108,7 +108,9 @@ passport.deserializeUser(function(id,done){
  * 
  */
 let smtpTransport = nodemailer.createTransport({
-  service: 'GandiMail',
+  host: "mail.gandi.net", // hostname
+  secureConnection: true, // use SSL
+  port: 465, // port for secure SMTP
   auth: {
       user: 'info@maarfapad.xyz',
       pass: config.mailerPass
@@ -142,7 +144,7 @@ app.post('/create_user',function(req,res,next){
               res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
             }else{
               const mailOptions = {
-                from: 'info@maarfapad.xyz',
+                from: 'Maarfapad project <info@maarfapad.xyz>',
                 to: req.body.email,
                 subject: 'Maarfapad sign up',
                 html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
