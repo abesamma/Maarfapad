@@ -293,7 +293,7 @@ app.post('/wiki/home',passport.authenticate('local',{
 }),function(req,res){
   db.attachment.get(req.user.id,'home',function(err,body){
     if(!err){
-        res.set('Content-Type','text/html');
+        res.setHeader('Content-Type','text/html')
         return res.send(body);
     }
   });
@@ -333,7 +333,7 @@ app.get('/wiki/:name',function(req,res){
     var userid = req.user.id
     db.attachment.get(userid,name,function(err,body){
       if(!err){
-        res.set('Content-Type', 'text/html');
+        res.setHeader('Content-Type','text/html')
         return res.send(body);
       }
     });
