@@ -333,7 +333,7 @@ app.get('/wiki/:name',function(req,res){
     db.attachment.get(userid,name,function(err,body){
       if(!err){
         res.set('Content-Type', 'text/html');
-        res.send(body);
+        return res.send(body);
       }
     });
   }else{
