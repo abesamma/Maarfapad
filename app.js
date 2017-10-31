@@ -41,7 +41,8 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   store: new MemoryStore({
-    checkPeriod: 86400000
+    checkPeriod: 86400000,
+    stale: true
   }),
   name: 'm|pad',
   secret: config.secret,
