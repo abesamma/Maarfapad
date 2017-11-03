@@ -55,7 +55,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/ff423897/empty.html'
+const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/fc3c3654/empty.html'
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
@@ -358,6 +358,9 @@ app.put('/wiki/:name/:rev',function(req,res){
     db.attachment.insert(userid,name,req.body,'text/html',{rev: revision},function(err,body){
       if(!err){
         res.sendStatus(200);
+      }else if(err.statusCode === 413){
+        res.sendStatus(413); // request file is too big
+        console.log(err);
       }else{
         console.log(err);
       }
