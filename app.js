@@ -133,7 +133,7 @@ app.post('/create_user',function(req,res,next){
   db.view('user','email',{include_docs: false},function(err,body){
     if(!err){
       // check user limit during testing period. To be removed later
-      if(body.total_rows < 4){
+      if(body.total_rows < 15){
         var id = shortid.generate();
         // check for account duplicate
         db.view('user','verify',{
@@ -378,7 +378,7 @@ app.get('/:wikiType/:wikiName/:rev',function(req,res){
       if(!err){
         var wikiCount = Object.keys(body._attachments).length;
         if(wikiCount === 2){
-          return res.sendStatus(204);
+          return res.sendStatus(204); // processed but ignored
         }else{
           request(EMPTY_URL,function(error,response,data){
             if(!error){
