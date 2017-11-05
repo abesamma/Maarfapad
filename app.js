@@ -339,7 +339,7 @@ app.get('/wiki/:name',function(req,res){
     db.attachment.get(userid,name,function(err,body){
       if(!err){
         res.writeHead(200,{
-          'Content-Tyep': 'text/html'
+          'Content-Type': 'text/html'
         });
         res.write(body);
         res.end();
