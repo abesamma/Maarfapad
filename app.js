@@ -55,7 +55,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/fc3c3654/empty.html'
+const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/e387d7fe/empty.html'
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
@@ -133,7 +133,7 @@ app.post('/create_user',function(req,res,next){
   db.view('user','email',{include_docs: false},function(err,body){
     if(!err){
       // check user limit during testing period. To be removed later
-      if(body.total_rows < 15){
+      if(body.total_rows < 21){
         var id = shortid.generate();
         // check for account duplicate
         db.view('user','verify',{
