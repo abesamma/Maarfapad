@@ -365,6 +365,8 @@ app.put('/wiki/:name/:rev',function(req,res){
         console.log(err);
       }
     });
+  }else{
+    res.sendStatus(401); // user unauthorised due to expired session
   }
 });
 
