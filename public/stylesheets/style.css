@@ -6,10 +6,10 @@ body {
 
 @media screen and (max-width: 700px) {
   h3#headers {
-    font-size: 25px;
+    font-size: 30px;
   }
   h5#sub-headers {
-    font-size: 15px;
+    font-size: 20px;
   }
 }
 
