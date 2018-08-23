@@ -18,7 +18,7 @@ var expressSanitized = require('express-sanitize-escape');
 var fs = require('fs');
 
 // Wiki editions @github.com
-import { EMPTY_URL } from './config/editions';
+import EMPTY_URL from './config/editions';
 
 // require routes
 var index = require('./routes/index');
