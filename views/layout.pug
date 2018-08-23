@@ -13,17 +13,44 @@ html
   div(class='navbar-fixed')
     nav
       div(class='nav-wrapper black')
-        a(href='/about' class='brand-logo')
-          span(style='font-family: Comfortaa') μ|aarfapad
-        ul(id='nav-mobile' class='right hide-on-med-and-down')
-          li
-            a(href='/signup') Sign up
-          li
-            a(href='/login') Login
-          li
-            a(href='/about') About
+        div(class='container')
+          a(href='/' class='brand-logo')
+            span(style='font-family: Comfortaa') μ|aarfapad
+          ul(id='nav-mobile' class='right hide-on-med-and-down')
+            li
+              a(href='/signup') Sign up
+            li
+              a(href='/login') Login
+            li
+              a(href='/about') About
   div(class='content')
     block content
+  footer(class='page-footer black')
+    div(class='container')
+      div(class='row')
+        div(class='col l6 s12')
+          h5(class='white-text') Company Bio
+          | We are a team of college students working on this project like 
+          | it's our full time job. Any amount would help support  
+          | and continue development on this project 
+          | and is greatly appreciated.
+        div(class='col l3 s12')
+          h5(class='white-text') Links
+          ul
+            li Link1
+            li Link2
+            li Link3
+            li Link4
+        div(class='col l3 s12')
+          h5(class='white-text') Connect
+          ul
+            li @Twitter
+            li @Facebook
+            li @Instagram
+            li Company Blog
+      div(class='footer-copyright')
+        li © 
+          a(href='https://www.linkedin.com/in/abraham-samma-094047153/') Abraham Samma, 2018
   script(src='https://code.jquery.com/jquery-3.2.1.min.js')
   script(src='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js')
   script(src='//static.getclicky.com/js' type='text/javascript')

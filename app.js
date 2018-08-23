@@ -14,6 +14,11 @@ var nodemailer = require("nodemailer");
 var helmet = require('helmet');
 var emailCheck = require('email-check');
 var config = require('./config/secret.json');
+var expressSanitized = require('express-sanitize-escape');
+var fs = require('fs');
+
+// Wiki editions @github.com
+import { EMPTY_URL } from './config/editions';
 
 // require routes
 var index = require('./routes/index');
@@ -23,10 +28,16 @@ var account = require('./routes/account');
 var recovery = require('./routes/recovery');
 var notice = require('./routes/notice');
 var about = require('./routes/about');
+var changeFeed = require('./routes/changefeed');
 
 // prepare database drive
 var nano = require('nano')(config.database);
 var db = nano.db.use('maarfapad');
+
+// log file stream
+var logStream = fs.createWriteStream(path.join(__dirname + '/logs/loggings.log'),{
+  flags: 'a'
+});
 
 var app = express();
 app.use(helmet());
@@ -34,14 +45,32 @@ app.use(helmet());
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
-app.use('/wiki/favicon.ico',express.static(__dirname + '/public' + '/favicon.ico'));
-app.use(logger('dev'));
+
+app.use('/error.html', express.static(__dirname + '/public/error.html',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'text/html');
+}}));
+app.use('/edition_index.json', express.static(__dirname + '/public/edition_index.json',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'application/json');
+}}));
+app.use('/wiki/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
+app.use('/wiki', express.static(__dirname + '/public' + '/javascripts'));
+app.use('/images', express.static(__dirname + '/public' + '/images'));
+if (process.env.NODE_ENV === 'development') {
+  app.use(logger('dev'));
+} else {
+  app.use(logger('combined',{
+    skip: function (req,res) { return res.statusCode < 400 },
+    stream: logStream
+  }));
+}
 app.use(bodyParser.raw({ type: 'text/html', limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(expressSanitized.middleware());
+expressSanitized.sanitizeParams(app, ['name', 'rev', 'wikiType', 'wikiName']);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   store: new MemoryStore({
-    checkPeriod: 86400000,
+    checkPeriod: 8.64e+7,
     stale: true
   }),
   name: 'm|pad',
@@ -50,12 +79,17 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 4.32e+8
-  } }));
+  }
+}));
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-const EMPTY_URL = 'https://cdn.rawgit.com/abesamma/TW5-editions/e387d7fe/empty.html'
+function paramCheck (param = '') {
+  // remove url chars that could mess with the viewing of the named wiki
+  var regex = new RegExp(/[/.&?=]/g);
+  return param.replace(regex,'');
+};
 
 // configure local strategy for passport authentication
 passport.use(new LocalStrategy({
@@ -63,41 +97,41 @@ passport.use(new LocalStrategy({
   passwordField: 'password',
   passReqToCallback: true
 },
-  function(req,username,password,done){
-      db.view('user','verify',{
-          'key': username
-      },function(err,body){
-          if(err){
-              return done(err);
-          }else{
-              if(body.rows.length === 0){
-                return done(null,false,req.flash('info','Incorrect email'));
-              }
-              body.rows.forEach(function(user){
-                  auth.verify(password,user.value,function(err,verified){
-                    if(verified === false){
-                      return done(null,false,req.flash('info','Incorrect password'));
-                    }
-                    if(verified === true){
-                      return done(null,user);
-                    }
-                  });
-              });
-          }
-      });
+  function (req, username, password, done) {
+    db.view('user', 'verify', {
+      'key': username
+    }, function (err, body) {
+      if (err) {
+        return done(err);
+      } else {
+        if (body.rows.length === 0) {
+          return done(null, false, req.flash('info', 'Incorrect email'));
+        }
+        body.rows.forEach(function (user) {
+          auth.verify(password, user.value, function (err, verified) {
+            if (verified === false) {
+              return done(null, false, req.flash('info', 'Incorrect password'));
+            }
+            if (verified === true) {
+              return done(null, user);
+            }
+          });
+        });
+      }
+    });
   }
 ));
 
 // serialise to session
-passport.serializeUser(function(user,done){
-  done(null,user.key);
+passport.serializeUser(function (user, done) {
+  done(null, user.key);
 });
 // deserialise user
-passport.deserializeUser(function(id,done){
-  db.view('user','verify',{ 'key': id },function(err,body){
-    if(!err){
-      body.rows.forEach(function(user){
-        done(err,user);
+passport.deserializeUser(function (id, done) {
+  db.view('user', 'verify', { 'key': id }, function (err, body) {
+    if (!err) {
+      body.rows.forEach(function (user) {
+        done(err, user);
       });
     }
   });
@@ -112,8 +146,8 @@ let smtpTransport = nodemailer.createTransport({
   secureConnection: true, // use SSL
   port: 465, // port for secure SMTP
   auth: {
-      user: 'info@maarfapad.xyz',
-      pass: config.mailerPass
+    user: 'info@maarfapad.xyz',
+    pass: config.mailerPass
   }
 });
 
@@ -127,22 +161,23 @@ app.use('/account', account);
 app.use('/recovery', recovery);
 app.use('/notice', notice);
 app.use('/about', about);
+app.use('/changefeed',changeFeed);
 
 // create a user account then redirect to index page
-app.post('/create_user',function(req,res,next){
-  db.view('user','email',{include_docs: false},function(err,body){
-    if(!err){
+app.post('/create_user', function (req, res, next) {
+  db.view('user', 'email', { include_docs: false }, function (err, body) {
+    if (!err) {
       // check user limit during testing period. To be removed later
-      if(body.total_rows < 21){
+      if (body.total_rows < 21) {
         var id = shortid.generate();
         // check for account duplicate
-        db.view('user','verify',{
+        db.view('user', 'verify', {
           'key': req.body.email
-        },function(err,body){
-          if(!err){
-            if(body.rows.length > 0){
+        }, function (err, body) {
+          if (!err) {
+            if (body.rows.length > 0) {
               res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
-            }else{
+            } else {
               const mailOptions = {
                 from: 'Maarfapad project <info@maarfapad.xyz>',
                 to: req.body.email,
@@ -151,75 +186,75 @@ app.post('/create_user',function(req,res,next){
               };
               // check if email address exists and can receive emails
               emailCheck(req.body.email)
-              .then((result) => {
-                if(result === true){
-                  // hash and salt pass
-                  auth.hash(req.body.password,function(err,hashed){
-                    req.body.password = hashed; // replace plain pass with hashed pass
-                    request(EMPTY_URL,function(error,resp,data){
-                      if(resp.statusMessage === 'OK'){
-                        if(!error){
-                          db.multipart.insert(
-                          req.body,
-                          [{name: 'home',data: data,content_type: 'text/html'}],
-                          id,
-                          function(err,body){
-                            if(!err){
-                              // email to confirm successful action
-                              return smtpTransport.sendMail(mailOptions,function(err,response){
-                                if(!err){
-                                  // redirect to login page if successful
-                                  res.redirect('/login');
-                                }else{
-                                  console.log(err);
-                                  res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                .then((result) => {
+                  if (result === true) {
+                    // hash and salt pass
+                    auth.hash(req.body.password, function (err, hashed) {
+                      req.body.password = hashed; // replace plain pass with hashed pass
+                      request(EMPTY_URL, function (error, resp, data) {
+                        if (resp.statusMessage === 'OK') {
+                          if (!error) {
+                            db.multipart.insert(
+                              req.body,
+                              [{ name: 'home', data: data, content_type: 'text/html' }],
+                              id,
+                              function (err, body) {
+                                if (!err) {
+                                  // email to confirm successful action
+                                  smtpTransport.sendMail(mailOptions, function (err, response) {
+                                    if (!err) {
+                                      // redirect to login page if successful
+                                      res.redirect('/login');
+                                    } else {
+                                      console.log(err);
+                                      res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                                    }
+                                  });
                                 }
                               });
-                            }
-                          });
-                        }else{
-                          console.log(error);
-                          res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                          } else {
+                            console.log(error);
+                            res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                          }
+                        } else {
+                          res.send(`<p>Something went wrong. Please try again later.</p><br><a href='/signup'>Go back</a>`);
                         }
-                      }else{
-                        res.send(`<p>Something went wrong. Please try again later.</p><br><a href='/signup'>Go back</a>`);
-                      }
+                      });
                     });
-                  });
-                }else{
-                  res.send(`<p>Something's wrong with the email you supplied. Please try again.</p><br><a href='/signup'>Go back</a>`)
-                }
-              }).catch((err) => {
-                console.log(err);
-                res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
-              });
+                  } else {
+                    res.send(`<p>Something's wrong with the email you supplied. Please try again.</p><br><a href='/signup'>Go back</a>`)
+                  }
+                }).catch((err) => {
+                  console.log(err);
+                  res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                });
             }
           }
         });
-      }else{
+      } else {
         res.redirect('/notice');
       }
-    }else{
+    } else {
       next(err);
     }
   });
 });
 
 // change email
-app.post('/change_email',function(req,res){
-  if(req.user){
+app.post('/change_email', function (req, res) {
+  if (req.user) {
     var id = req.user.id
     var data = req.body.newemail;
-    db.view('user','verify',{ 'key': data },function(err,body){
-      if(body.rows.length > 0){
+    db.view('user', 'verify', { 'key': data }, function (err, body) {
+      if (body.rows.length > 0) {
         res.send(`<p id='flash'>That email is already in use by another account</p><br><a href='/account'>Go back</a>`);
-      }else{
-        db.atomic('user','updateEmail',id,{value: data},function(err,body){
-          if(!err){
-            req.session.destroy(function(err){
+      } else {
+        db.atomic('user', 'updateEmail', id, { value: data }, function (err, body) {
+          if (!err) {
+            req.session.destroy(function (err) {
               res.redirect('/login');
             });
-          }else{
+          } else {
             res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
           }
         });
@@ -229,33 +264,35 @@ app.post('/change_email',function(req,res){
 });
 
 // change password
-app.post('/change_password',function(req,res){
-  if(req.user){
+app.post('/change_password', function (req, res) {
+  if (req.user) {
     var id = req.user.id
     var verify = req.body.verifypass
     var _new = req.body.newpass
-    if(_new === verify){
-      auth.hash(_new,function(err,hashed){
-        db.atomic('user','updatePass',id,{value: hashed},function(err,body){
-          if(!err){
+    if (_new === verify) {
+      auth.hash(_new, function (err, hashed) {
+        db.atomic('user', 'updatePass', id, { value: hashed }, function (err, body) {
+          if (!err) {
             res.send(`<p>Password change successful</p><br><a href='/'>Go back home</a>`);
-          }else{
-            res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
+          } else {
+            res.send(`<p id='flash'>Something went wrong. Please try again later</p><br><a href='/'>Go back home</a>`);
           }
         });
       });
+    } else {
+      res.send(`<p id='flash'>Passwords do not match</p><br><a href='/account'>Try again</a>`);
     }
   }
 });
 
 // reset password
-app.post('/reset',function(req,res){
+app.post('/reset', function (req, res) {
   var resetPass = shortid.generate();
-  db.view('user','verify',{
+  db.view('user', 'verify', {
     'key': req.body.email
-  },function(err,body){
-    if(!err){
-      if(body.rows.length === 1){
+  }, function (err, body) {
+    if (!err) {
+      if (body.rows.length === 1) {
         var userID = body.rows[0].id;
         // prepare email to send
         var mail = {
@@ -264,24 +301,23 @@ app.post('/reset',function(req,res){
           subject: 'Maarfapad password reset',
           html: `<p>Here's your reset password: ${resetPass}</p><p><a href='http://maarfapad.com'>Click here</a> to login</p>`
         };
-        // send recovery email
-        smtpTransport.sendMail(mail,function(err,response){
-          if(!err){
-            res.send('<p>A recovery email has been send to your address. Check your mail</p>');
-          }else{
-            res.send(`<p>Something went wrong. Email not sent because: ${err.message}.</p><a href='/'>Go to home</a>`);
-          }
-        });
-        auth.hash(resetPass,function(err,hashed){
-          db.atomic('user','updatePass',userID,{value: hashed},function(err,body){
-            if(!err){
-              return
-            }else{
+        auth.hash(resetPass, function (err, hashed) {
+          db.atomic('user', 'updatePass', userID, { value: hashed }, function (err, body) {
+            if (!err) {
+              // send recovery email
+              smtpTransport.sendMail(mail, function (err, response) {
+                if (!err) {
+                  res.send('<p>A recovery email has been send to your address. Check your mail</p>');
+                } else {
+                  res.send(`<p>Something went wrong. Email not sent because: ${err.message}.</p><a href='/'>Go to home</a>`);
+                }
+              });
+            } else {
               console.log(err);
             }
           });
         });
-      }else{
+      } else {
         return res.send('<p>Sorry, there is no account associated with that email address</p>')
       }
     }
@@ -289,170 +325,169 @@ app.post('/reset',function(req,res){
 });
 
 // user login to home.html
-app.post('/wiki/home',passport.authenticate('local',{
+app.post('/login', passport.authenticate('local', {
   failureRedirect: '/login',
   failureFlash: true
-}),function(req,res){
-  db.attachment.get(req.user.id,'home',function(err,body){
-    if(!err){
-      res.writeHead(200, {
-        'Content-Type': 'text/html'
-      });
-      res.write(body);
-      res.end();
-    }
-  });
+}), function (req, res) {
+  return res.redirect('/wiki/home');
 });
 
 // account deletion
-app.get('/delete_account',function(req,res){
-  if(req.user){
-    db.show('user','getUser',req.user.id,function(err,body){
-      if(!err){
+app.get('/delete_account', function (req, res) {
+  if (req.user) {
+    db.show('user', 'getUser', req.user.id, function (err, body) {
+      if (!err) {
         var docRev = body._rev;
-        db.destroy(req.user.id,docRev,function(err,body){
-          if(!err){
+        db.destroy(req.user.id, docRev, function (err, body) {
+          if (!err) {
             console.log(body);
-            req.session.destroy(function(err){
+            req.session.destroy(function (err) {
               res.redirect('/login');
             });
-          }else{
+          } else {
             console.log(err);
-            res.send(500,'Server error. Please try again later.');
+            res.send(500, 'Server error. Please try again later.');
           }
         });
-      }else{
+      } else {
         console.log(err);
-        res.send(500,'Server error. Please try again later.');
+        res.send(500, 'Server error. Please try again later.');
       }
     });
-  }
+  } else res.sendStatus(401);
 });
 
 /*
  *Below are the api routes for maarfapad a la tiddlywiki to use
  */
-app.get('/wiki/:name',function(req,res){
+app.get('/wiki/:name', function (req, res) {
   var name = req.params.name
-  if(req.user){
+  if (req.user) {
     var userid = req.user.id
-    db.attachment.get(userid,name,function(err,body){
-      if(!err){
-        res.writeHead(200,{
-          'Content-Type': 'text/html'
-        });
-        res.write(body);
-        res.end();
+    db.attachment.get(userid, name, function (err, body) {
+      if (!err) {
+        res.header('Content-Type', 'text/html');
+        res.send(body);
+      } else {
+        res.redirect('/error.html');
       }
     });
-  }else{
+  } else {
     res.redirect('/');
   }
 });
 
-app.put('/wiki/:name/:rev',function(req,res){
+app.put('/wiki/:name/:rev', function (req, res) {
   var name = req.params.name
   var revision = req.params.rev;
-  if(req.user){
+  if (req.user) {
     var userid = req.user.id
-    db.attachment.insert(userid,name,req.body,'text/html',{rev: revision},function(err,body){
-      if(!err){
-        res.sendStatus(200);
-      }else if(err.statusCode === 413){
-        res.sendStatus(413); // request file is too big
+    db.attachment.insert(userid, name, req.body, 'text/html', { rev: revision }, function (err, body) {
+      if (err) {
+        if (err.statusCode === 413) res.sendStatus(413); // file too big
         console.log(err);
-      }else{
-        console.log(err);
+        res.sendStatus(500);
       }
+      nano.db.compact('maarfapad',function (err, body) {
+        if (err) console.log('Error on put:',err);
+      });
+      res.sendStatus(200);
     });
-  }else{
-    res.sendStatus(401); // user unauthorised due to expired session
+  } else {
+    res.sendStatus(401);
   }
 });
 
-app.get('/:wikiType/:wikiName/:rev',function(req,res){
-  // var type = req.params.wikiType + '.html'
-  var name = req.params.wikiName;
+app.get('/:wikiType/:wikiName/:rev', function (req, res) {
+  var type = paramCheck(req.params.wikiType);
+  var name = paramCheck(req.params.wikiName);
   var revision = req.params.rev;
-  if(req.user){
-    var userid = req.user.id
-    db.show('user','getUser',userid,function(err,body){
-      if(!err){
-        var wikiCount = Object.keys(body._attachments).length;
-        if(wikiCount === 2){
-          return res.sendStatus(204); // processed but ignored
-        }else{
-          request(EMPTY_URL,function(error,response,data){
-            if(!error){
-              db.attachment.insert(userid,name,data,'text/html',{rev: revision},function(err,body){
-                if(!err){
-                  res.sendStatus(200);
-                }else{
-                  console.log(err);
-                }
-              });
-            }else{
-              console.log(error);
-            }
+  var userid = req.user.id;
+  function createWiki (id,name,rev,url) {
+    db.show('user', 'getUser', id, function (err, body) {
+      if (err) return res.sendStatus(500);
+      var wikiCount = Object.keys(body._attachments).length;
+      if (wikiCount === 2) {
+        return res.sendStatus(204); // processed but ignored
+      } else {
+        request(url, function (error, response, data) {
+          if (error) return res.sendStatus(500);
+          db.attachment.insert(id, name, data, 'text/html', { rev: rev }, function (err, body) {
+            if (err) return res.sendStatus(500);
+            nano.db.compact('maarfapad', function (err, body) {
+              if (err) console.log('Error on compaction:', err);
+            });
+            return res.sendStatus(200);
           });
-        }
-      }else{
-        console.log(err);
+        });
       }
     });
-  }
+  };
+  if (req.user) {
+    switch (type) {
+      case 'empty': 
+        createWiki(userid,name,revision,EMPTY_URL);
+        break;
+      default: res.sendStatus(404);
+    }
+  } else res.sendStatus(401);
 });
 
 // delete route
-app.delete('/wiki/:name/:rev',function(req,res){
+app.delete('/wiki/:name/:rev', function (req, res) {
   var name = req.params.name;
   var revision = req.params.rev;
-  if(req.user){
+  if (req.user) {
     var userid = req.user.id;
-    db.attachment.destroy(userid,name,{rev: revision},function(err,body){
-      if(!err){
+    db.attachment.destroy(userid, name, { rev: revision }, function (err, body) {
+      if (!err) {
+        nano.db.compact('maarfapad',function (err, body) {
+          if (err) console.log('Error on put:',err);
+        });
         res.sendStatus(200);
-      }else{
+      } else {
         console.log(err);
+        res.sendStatus(500);
       }
     });
-  }
+  } else res.sendStatus(401);
 });
 
 // send a doc snapshot for wikiManager
-app.get('/user',function(req,res){
-  if(req.user){
-    var userid = req.user.id;
-    db.show('user','getUser',req.user.id,function(err,body){
-      if(!err){
+app.get('/user', function (req, res) {
+  if (req.user) {
+    db.show('user', 'getUser', req.user.id, function (err, body) {
+      if (!err) {
         res.send(body);
-      }else{
+      } else {
         console.log(err);
       }
     });
-  }
+  } else res.sendStatus(401);
 });
 
 // handle options
-app.options('/*',function(req,res){
+app.options('/*', function (req, res) {
   res.header('Access-Control-Allow-Origin', config.appURL);
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, If-Match');
+  res.header('Service-Worker-Allowed', '/wiki/');
+  res.header('Cache-Control', 'private');
   res.sendStatus(200);
 });
 
- /**
- * Error handlers
- */
+/**
+* Error handlers
+*/
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
