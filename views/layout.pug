@@ -5,7 +5,7 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1")
     meta(name="google-site-verification" content="3ph84G-yjDz22JRVGOnucwVAzRyFma_yJhJGQeIipKc")
     link(rel='stylesheet' href='/stylesheets/style.css')
-    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css')
+    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css')
     link(rel='stylesheet' href='https://fonts.googleapis.com/icon?family=Material+Icons')
     link(rel='stylesheet' href='https://fonts.googleapis.com/css?family=Comfortaa')
     link(rel='icon' href='/favicon.ico')
@@ -16,13 +16,34 @@ html
         div(class='container')
           a(href='/' class='brand-logo')
             span(style='font-family: Comfortaa') μ|aarfapad
-          ul(id='nav-mobile' class='right hide-on-med-and-down')
+          a(href='#' data-target='mobile' class='sidenav-trigger')
+            i(class='material-icons') menu
+          ul(class='right hide-on-med-and-down')
             li
               a(href='/signup') Sign up
             li
               a(href='/login') Login
             li
               a(href='/about') About
+  ul(class='sidenav' id='mobile')
+    li
+      a(href='/signup') Sign up
+    li
+      a(href='/login') Login
+    li
+      a(href='/about') About
+    li
+      div(class='divider')
+    li 
+      a(href='/') @Twitter
+    li 
+      a(href='/') @Facebook
+    li 
+      a(href='/') Company Blog
+    li
+      div(class='divider')
+    li
+      a(href='https://www.linkedin.com/in/abraham-samma-094047153/') © Abraham Samma, 2018
   div(class='content')
     block content
   footer(class='page-footer black')
@@ -51,8 +72,9 @@ html
       div(class='footer-copyright')
         li © 
           a(href='https://www.linkedin.com/in/abraham-samma-094047153/') Abraham Samma, 2018
-  script(src='https://code.jquery.com/jquery-3.2.1.min.js')
-  script(src='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js')
+  script(src='https://code.jquery.com/jquery-2.1.1.min.js')
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js')
+  script(type='text/javascript' src='/javascripts/index.js')
   script(src='//static.getclicky.com/js' type='text/javascript')
   script(type='text/javascript') try{ clicky.init(101080038); }catch(e){}
   

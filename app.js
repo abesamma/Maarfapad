@@ -55,6 +55,8 @@ app.use('/edition_index.json', express.static(__dirname + '/public/edition_index
 app.use('/wiki/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
 app.use('/wiki', express.static(__dirname + '/public' + '/javascripts'));
 app.use('/images', express.static(__dirname + '/public' + '/images'));
+app.use('/javascript', express.static(__dirname + '/public' + '/javascripts'));
+app.use('/stylesheets', express.static(__dirname + '/public' + '/stylesheets'));
 if (process.env.NODE_ENV === 'development') {
   app.use(logger('dev'));
 } else {
