@@ -11,12 +11,12 @@ block content
   
     form(action='/create_user' method='post')
       div(class='card-content')
-        h4 Create an Account
-        +input('First name', 'text', 'first_name')
-        +input('Last name', 'text', 'second_name')
+        h4 Create a Free Account 
+        h6 (limited to 2 hosted notebooks)
         +input('Email', 'email', 'email')
         +input('Create password', 'password', 'password')
       div(class='card-action')
+        p(id='flash') #{message}
         button(type='submit' class='btn waves-effect waves-light black') Create account
-          i(class='material-icons right') send
+          i(class='material-icons right')
   a(class='waves-effect waves-black btn-flat' href='/') Back

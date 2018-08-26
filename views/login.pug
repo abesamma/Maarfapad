@@ -8,15 +8,15 @@ block content
         h4 Login
         div(class='input-field')
           label(for='email_field') Enter email address
-          input(class='validate' id='email_field' type='email' name='email')
+          input(class='validate' id='email_field' type='email' name='email' required)
         div(class='input-field')
-          input(class='validate' id='password_field' type='password' name='password')
+          input(class='validate' id='password_field' type='password' name='password' required)
           label(for='password_field') Enter password
           a(href='/recovery') Forgot password?
           p
       div(class='card-action')
+        p(id='flash') #{message}
         button(type='submit' class='btn waves-effect waves-light black') Continue
           i(class='material-icons right') send
-        p(id='flash') #{message}
   
   a(class='waves-effect waves-black btn-flat' href='/') Back

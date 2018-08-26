@@ -38,6 +38,7 @@ li.collection-item {
   margin: auto;
   width: 65%;
   text-align: center;
+  padding-bottom: 5vh;
 }
 
 p#flash {

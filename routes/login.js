@@ -4,7 +4,7 @@ var router = express.Router();
 router.get('/', function(req, res, next) {
   req.logOut();
   res.clearCookie('m|pad');
-  res.render('login',{message: req.flash('info')});
+  res.render('login',{message: req.flash('login-info')});
 });
 
 module.exports = router;

@@ -119,13 +119,13 @@ passport.use(new LocalStrategy({
         return done(err);
       } else {
         if (body.rows.length === 0) {
-          return done(null, false, req.flash('info', 'Incorrect email'));
+          return done(null, false, req.flash('login-info', 'Incorrect email'));
         }
         body.rows.forEach(function (user) {
           auth.verify(password, user.value, function (err, verified) {
             if (err) logError(err);
             if (verified === false) {
-              return done(null, false, req.flash('info', 'Incorrect password'));
+              return done(null, false, req.flash('login-info', 'Incorrect password'));
             }
             if (verified === true) {
               return done(null, user);
@@ -221,29 +221,36 @@ app.post('/create_user', function (req, res, next) {
                                   smtpTransport.sendMail(mailOptions, function (err, response) {
                                     if (!err) {
                                       // redirect to login page if successful
+                                      req.flash('login-info','Account created successfuly! Please login.');
                                       res.redirect('/login');
                                     } else {
                                       logError(err);
-                                      res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                                      req.flash('signup-info','An error occured. Please try again later');
+                                      res.redirect('/signup');
                                     }
                                   });
                                 }
                               });
                           } else {
                             logError(error);
-                            res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                            req.flash('signup-info','An error occured. Please try again later');
+                            res.redirect('/signup');
                           }
                         } else {
-                          res.send(`<p>Something went wrong. Please try again later.</p><br><a href='/signup'>Go back</a>`);
+                          logError('Failed to retrieve template Wiki from CDN');
+                          req.flash('signup-info','Failed to create account. Try again later');
+                          res.redirect('/signup');
                         }
                       });
                     });
                   } else {
-                    res.send(`<p>Something's wrong with the email you supplied. Please try again.</p><br><a href='/signup'>Go back</a>`)
+                    req.flash('signup-info','Something is wrong with the email you supplied.');
+                    res.redirect('/signup');
                   }
                 }).catch((err) => {
                   logError(err);
-                  res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
+                  req.flash('signup-info','An error occured. Please try again later');
+                  res.redirect('/signup');
                 });
             }
           }
@@ -253,7 +260,8 @@ app.post('/create_user', function (req, res, next) {
       }
     } else {
       logError(err);
-      next(err);
+      req.flash('signup-info','An error occured. Please try again later');
+      res.redirect('/signup');
     }
   });
 });
@@ -331,20 +339,24 @@ app.post('/reset', function (req, res) {
               // send recovery email
               smtpTransport.sendMail(mail, function (err, response) {
                 if (!err) {
-                  res.send('<p>A recovery email has been send to your address. Check your mail</p>');
+                  req.flash('recovery-info','A recovery email has been sent. Check your Inbox or Spam folder');
+                  res.redirect('/recovery');
                 } else {
                   logError(err);
-                  res.send(`<p>Something went wrong. Email not sent because: ${err.message}.</p><a href='/'>Go to home</a>`);
+                  req.flash('recovery-info',`Something went wrong. Email not sent because: ${err.message}.`);
+                  res.redirect('/recovery');
                 }
               });
             } else {
               logError(err);
-              res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
+              req.flash('recovery-info','Something went wrong. Please try again later');
+              res.redirect('/recovery');
             }
           });
         });
       } else {
-        return res.send('<p>Sorry, there is no account associated with that email address</p>')
+        req.flash('recovery-info','Sorry, there is no account associated with that email address');
+        res.redirect('/recovery');
       }
     }
   });
