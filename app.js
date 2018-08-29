@@ -29,6 +29,7 @@ var recovery = require('./routes/recovery');
 var notice = require('./routes/notice');
 var about = require('./routes/about');
 var changeFeed = require('./routes/changefeed');
+var offline = require('./routes/offline');
 
 // prepare database drive
 var nano = require('nano')(config.database);
@@ -51,15 +52,17 @@ app.use(helmet());
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-app.use('/error.html', express.static(__dirname + '/public/error.html',{setHeaders: function (res, path, stat) {
-  res.set('Content-Type', 'text/html');
-}}));
 app.use('/edition_index.json', express.static(__dirname + '/public/edition_index.json',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'application/json');
+}}));
+app.use('/manifest.json', express.static(__dirname + '/public/manifest.json',{setHeaders: function (res, path, stat) {
   res.set('Content-Type', 'application/json');
 }}));
 app.use('/wiki/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
 app.use('/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
-app.use('/wiki', express.static(__dirname + '/public' + '/javascripts'));
+app.use('/sw.js', express.static(__dirname + '/public' + '/javascripts/sw.js',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'application/javascript');
+}}));
 app.use('/images', express.static(__dirname + '/public' + '/images'));
 app.use('/javascript', express.static(__dirname + '/public' + '/javascripts'));
 app.use('/stylesheets', express.static(__dirname + '/public' + '/stylesheets'));
@@ -178,6 +181,7 @@ app.use('/account', account);
 app.use('/recovery', recovery);
 app.use('/notice', notice);
 app.use('/about', about);
+app.use('/offline', offline);
 app.use('/changefeed',changeFeed);
 
 // create a user account then redirect to index page
@@ -407,7 +411,7 @@ app.get('/wiki/:name', function (req, res) {
         res.send(body);
       } else {
         logError(err);
-        res.redirect('/error.html');
+        res.redirect('/offline');
       }
     });
   } else {

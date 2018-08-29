@@ -1,28 +1,26 @@
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 34 installed');
+    console.log('Mpad service worker version 0.5.0 installed');
     event.waitUntil(
-        caches.open('mpad-cache-v6').then(function (cache){
-            var cachedRequest = function (path) {
-                return new Request(path, {
-                    bodyUsed: false,
-                    credentials: "include",
-                    integrity: "",
-                    method: "GET",
-                    redirect: "follow", // needed to prevent respondWith() from throwing network error
-                    referrer: "",
-                    referrerPolicy: "no-referrer-when-downgrade"
-                });
-            }
-            cache.add(cachedRequest('/wiki/home'));
-            cache.add(cachedRequest('/error.html'));
-            cache.add(cachedRequest('/user'));
+        caches.open('mpad-cache-v0.5').then(function (cache){
+            cache.addAll([
+                'https://fonts.googleapis.com/icon?family=Material+Icons',
+                'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
+                'https://code.jquery.com/jquery-2.1.1.min.js',
+                'https://fonts.googleapis.com/css?family=Comfortaa',
+                'https://fonts.googleapis.com/css?family=Comfortaa:300&subset=latin-ext',
+                '/stylesheets/style.css',
+                '/javascripts/index.js',
+                '/offline',
+                '/favicon.ico',
+                '/manifest.json'
+            ]);
         })
     );
 });
 
 self.addEventListener('activate', function (event) {
-    var cacheWhitelist = ['mpad-cache-v6'];
+    var cacheWhitelist = ['mpad-cache-v0.5'];
     event.waitUntil(
         caches.keys().then(function (keyList) {
             clients.claim(); // sieze control of all pages in scope without a reload
@@ -52,9 +50,10 @@ self.addEventListener('fetch', function (event) {
     let didTimeout = false;
     let timer;
     let eventURL = event.request.url;
-    let urlForRegexTest = new URL(eventURL);
-    let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/);
+    let url = new URL(eventURL);
+    let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki url
 
+    if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
     if (event.request.method == 'HEAD') return;
     if (eventURL.includes('changefeed')) return;
@@ -62,7 +61,7 @@ self.addEventListener('fetch', function (event) {
     if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') return;
     if (event.request.method === 'PUT') {
         // update cache after successful PUT
-        caches.open('mpad-cache-v6').then(function (cache) {
+        caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.keys().then(function (keys) {
                 keys.forEach(function (request) {
                     var array = eventURL.match(request.url);
@@ -89,7 +88,7 @@ self.addEventListener('fetch', function (event) {
     }
     // delete request handler
     if (event.request.method === 'DELETE') {
-        caches.open('mpad-cache-v6').then(function(cache){
+        caches.open('mpad-cache-v0.5').then(function(cache){
             cache.delete(event.request.url)
             .then(function(res){
                 if (res) {
@@ -100,7 +99,7 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    if (event.request.method === 'GET' && regex.test(urlForRegexTest.pathname)) {
+    if (event.request.method === 'GET' && regex.test(url.pathname)) {
         event.respondWith(
             new Promise(function (resolve, reject) {
 
@@ -119,7 +118,7 @@ self.addEventListener('fetch', function (event) {
             }).then(function (res) {
                 // for all GET requests
                 console.log('Serving from network:', event.request.url);
-                caches.open('mpad-cache-v6').then(function (cache) {
+                caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(cachedRequest, res).then(function () {
                         console.log('Cached url:', event.request.url);
                     });
@@ -139,15 +138,38 @@ self.addEventListener('fetch', function (event) {
                             });
                         });
                     }, 1500);
-                    if (!result) return caches.match('/error.html');
+                    if (!result) return caches.match('/offline');
                     return result;
+                });
+            })
+        );
+    } else if (url.pathname.match(/^\/(|signup|login|about|recovery|notice|recovery|account|)$/)) {
+        event.respondWith(
+            fetch(event.request).then(function (res) {
+                return res;
+            }).catch(function () {
+                return caches.open('mpad-cache-v0.5').then(function (cache) {
+                    cache.keys().then(function (keyList) {
+                        keyList.forEach(function (request, index, array) {
+                            if (request.url.match(/(offline|js|css|icon|favicon|manifest)$/g)) return;
+                            return cache.delete(request);
+                        });
+                    });
+                }).then(function () {
+                    return new Response('', {
+                        'status': 302,
+                        'statusText': 'OK',
+                        'headers': new Headers({
+                            'Location': url.origin + '/wiki/home'
+                        })
+                    });
                 });
             })
         );
     } else {
         event.respondWith(
             fetch(event.request).then(function (res){
-                caches.open('mpad-cache-v6').then(function (cache){
+                caches.open('mpad-cache-v0.5').then(function (cache){
                     cache.put(cachedRequest,res);
                 });
                 return res.clone();
