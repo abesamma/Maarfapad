@@ -127,18 +127,20 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(cachedRequest).then(function (result) {
                     console.log('Serving from cache:', event.request.url);
-                    setTimeout(function () {
-                        clients.matchAll().then(function (all) {
-                            all.map(function (client) {
-                                client.postMessage({
-                                    message: 'You are currently working offline.',
-                                    name: 'mpad-sw',
-                                    type: 'offline'
+                    if (!result) return caches.match('/offline').then(function (offlineResponse) {
+                        setTimeout(function () {
+                            clients.matchAll().then(function (all) {
+                                all.map(function (client) {
+                                    client.postMessage({
+                                        message: 'You are currently working offline.',
+                                        name: 'mpad-sw',
+                                        type: 'offline'
+                                    });
                                 });
                             });
-                        });
-                    }, 1500);
-                    if (!result) return caches.match('/offline');
+                        }, 1500);
+                        return offlineResponse
+                    })
                     return result;
                 });
             })
