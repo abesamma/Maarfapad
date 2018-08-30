@@ -127,33 +127,40 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(cachedRequest).then(function (result) {
                     console.log('Serving from cache:', event.request.url);
-                    if (!result) return caches.match('/offline').then(function (offlineResponse) {
-                        setTimeout(function () {
-                            clients.matchAll().then(function (all) {
-                                all.map(function (client) {
-                                    client.postMessage({
-                                        message: 'You are currently working offline.',
-                                        name: 'mpad-sw',
-                                        type: 'offline'
-                                    });
+                    setTimeout(function () {
+                        clients.matchAll().then(function (all) {
+                            all.map(function (client) {
+                                client.postMessage({
+                                    message: 'You are currently working offline.',
+                                    name: 'mpad-sw',
+                                    type: 'offline'
                                 });
                             });
-                        }, 1500);
-                        return offlineResponse
-                    })
+                        });
+                    }, 1500);
+                    if (!result) return caches.match('/offline');
                     return result;
                 });
             })
         );
     } else if (url.pathname.match(/^\/(|signup|login|about|recovery|notice|recovery|account|)$/)) {
+        // wipe out data after logging out
         event.respondWith(
             fetch(event.request).then(function (res) {
+                caches.open('mpad-cache-v0.5').then(function (cache) {
+                    cache.keys().then(function (keyList) {
+                        keyList.forEach(function (request, index, array) {
+                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)$/g)) return;
+                            return cache.delete(request);
+                        });
+                    });
+                });
                 return res;
             }).catch(function () {
                 return caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|js|css|icon|favicon|manifest)$/g)) return;
+                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)$/g)) return;
                             return cache.delete(request);
                         });
                     });
@@ -177,15 +184,18 @@ self.addEventListener('fetch', function (event) {
                 return res.clone();
             }).catch(function (){
                 return caches.match(cachedRequest).then(function (result){
-                    clients.matchAll().then(function (all) {
-                        all.map(function (client) {
-                            client.postMessage({
-                                message: 'You are currently working offline.',
-                                name: 'mpad-sw',
-                                type: 'offline'
+                    if (!result) {
+                        clients.matchAll().then(function (all) {
+                            all.map(function (client) {
+                                client.postMessage({
+                                    message: 'You are currently working offline.',
+                                    name: 'mpad-sw',
+                                    type: 'offline'
+                                });
                             });
                         });
-                    });
+                        return new Response('', { status: 404 });
+                    }
                     return result;
                 });
             })
