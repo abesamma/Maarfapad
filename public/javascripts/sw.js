@@ -51,7 +51,7 @@ self.addEventListener('fetch', function (event) {
     let timer;
     let eventURL = event.request.url;
     let url = new URL(eventURL);
-    let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki url
+    let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
 
     if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
@@ -150,7 +150,7 @@ self.addEventListener('fetch', function (event) {
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)$/g)) return;
+                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)/g)) return;
                             return cache.delete(request);
                         });
                     });
@@ -160,7 +160,7 @@ self.addEventListener('fetch', function (event) {
                 return caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)$/g)) return;
+                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)/g)) return;
                             return cache.delete(request);
                         });
                     });
