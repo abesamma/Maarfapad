@@ -6,6 +6,7 @@ var logger = require('morgan');
 var session = require('express-session');
 var MemoryStore = require('memorystore')(session);
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var auth = require('passport-local-authenticate');
@@ -82,6 +83,7 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use(bodyParser.raw({ type: 'text/html', limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
 app.use(expressSanitized.middleware());
 expressSanitized.sanitizeParams(app, ['name', 'rev', 'wikiType', 'wikiName']);
 app.use(express.static(path.join(__dirname, 'public')));
@@ -403,6 +405,7 @@ app.get('/delete_account', function (req, res) {
  */
 app.get('/wiki/:name', function (req, res) {
   var name = req.params.name
+  console.log(req.cookies);
   if (req.user) {
     var userid = req.user.id
     db.attachment.get(userid, name, function (err, body) {
