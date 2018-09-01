@@ -1,6 +1,6 @@
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.5.0 installed');
+    console.log('Mpad service worker version 0.5.4 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache){
             cache.addAll([
@@ -52,6 +52,30 @@ self.addEventListener('fetch', function (event) {
     let eventURL = event.request.url;
     let url = new URL(eventURL);
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
+
+    function setOfflineCookieMsg () {
+        clients.matchAll().then(function (all) {
+            all.map(function (client) {
+                client.postMessage({
+                    message: 'mpad-offline=true',
+                    name: 'mpad-sw',
+                    type: 'offline-status-cookie'
+                });
+            });
+        });
+    };
+
+    function offlineMsg () {
+        clients.matchAll().then(function (all) {
+            all.map(function (client) {
+                client.postMessage({
+                    message: 'You are currently working offline.',
+                    name: 'mpad-sw',
+                    type: 'offline-message'
+                });
+            });
+        });
+    };
 
     if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
@@ -127,18 +151,13 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(cachedRequest).then(function (result) {
                     console.log('Serving from cache:', event.request.url);
-                    setTimeout(function () {
-                        clients.matchAll().then(function (all) {
-                            all.map(function (client) {
-                                client.postMessage({
-                                    message: 'You are currently working offline.',
-                                    name: 'mpad-sw',
-                                    type: 'offline'
-                                });
-                            });
+                    setTimeout(offlineMsg, 1500);
+                    if (!result) {
+                        return caches.match('/offline').then(function (offline) {
+                            setTimeout(setOfflineCookieMsg, 2000);
+                            return offline;
                         });
-                    }, 1500);
-                    if (!result) return caches.match('/offline');
+                    }
                     return result;
                 });
             })
@@ -150,7 +169,7 @@ self.addEventListener('fetch', function (event) {
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)/g)) return;
+                            if (request.url.match(/(offline|js|stylesheets|fonts|icon|favicon|manifest)/g)) return;
                             return cache.delete(request);
                         });
                     });
@@ -160,7 +179,7 @@ self.addEventListener('fetch', function (event) {
                 return caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|.js|.css|fonts|icon|favicon|manifest)/g)) return;
+                            if (request.url.match(/(offline|javascripts|stylesheets|fonts|icon|favicon|manifest)/g)) return;
                             return cache.delete(request);
                         });
                     });
@@ -185,15 +204,7 @@ self.addEventListener('fetch', function (event) {
             }).catch(function (){
                 return caches.match(cachedRequest).then(function (result){
                     if (!result) {
-                        clients.matchAll().then(function (all) {
-                            all.map(function (client) {
-                                client.postMessage({
-                                    message: 'You are currently working offline.',
-                                    name: 'mpad-sw',
-                                    type: 'offline'
-                                });
-                            });
-                        });
+                        offlineMsg();
                         return new Response('', { status: 404 });
                     }
                     return result;

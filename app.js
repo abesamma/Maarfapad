@@ -27,7 +27,6 @@ var signup = require('./routes/signup');
 var login = require('./routes/login');
 var account = require('./routes/account');
 var recovery = require('./routes/recovery');
-var notice = require('./routes/notice');
 var about = require('./routes/about');
 var changeFeed = require('./routes/changefeed');
 var offline = require('./routes/offline');
@@ -181,93 +180,79 @@ app.use('/signup', signup);
 app.use('/login', login);
 app.use('/account', account);
 app.use('/recovery', recovery);
-app.use('/notice', notice);
 app.use('/about', about);
 app.use('/offline', offline);
 app.use('/changefeed',changeFeed);
 
 // create a user account then redirect to index page
 app.post('/create_user', function (req, res, next) {
-  db.view('user', 'email', { include_docs: false }, function (err, body) {
+  var id = shortid.generate();
+  // check for account duplicate
+  db.view('user', 'verify', {
+    'key': req.body.email
+  }, function (err, body) {
     if (!err) {
-      // check user limit during testing period. To be removed later
-      if (body.total_rows < 21) {
-        var id = shortid.generate();
-        // check for account duplicate
-        db.view('user', 'verify', {
-          'key': req.body.email
-        }, function (err, body) {
-          if (!err) {
-            if (body.rows.length > 0) {
-              res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
-            } else {
-              const mailOptions = {
-                from: 'Maarfapad project <info@maarfapad.xyz>',
-                to: req.body.email,
-                subject: 'Maarfapad sign up',
-                html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
-              };
-              // check if email address exists and can receive emails
-              emailCheck(req.body.email)
-                .then((result) => {
-                  if (result === true) {
-                    // hash and salt pass
-                    auth.hash(req.body.password, function (err, hashed) {
-                      req.body.password = hashed; // replace plain pass with hashed pass
-                      request(EMPTY_URL, function (error, resp, data) {
-                        if (resp.statusMessage === 'OK') {
-                          if (!error) {
-                            db.multipart.insert(
-                              req.body,
-                              [{ name: 'home', data: data, content_type: 'text/html' }],
-                              id,
-                              function (err, body) {
-                                if (!err) {
-                                  // email to confirm successful action
-                                  smtpTransport.sendMail(mailOptions, function (err, response) {
-                                    if (!err) {
-                                      // redirect to login page if successful
-                                      req.flash('login-info','Account created successfuly! Please login.');
-                                      res.redirect('/login');
-                                    } else {
-                                      logError(err);
-                                      req.flash('signup-info','An error occured. Please try again later');
-                                      res.redirect('/signup');
-                                    }
-                                  });
-                                }
-                              });
-                          } else {
-                            logError(error);
-                            req.flash('signup-info','An error occured. Please try again later');
-                            res.redirect('/signup');
+      if (body.rows.length > 0) {
+        res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
+      } else {
+        const mailOptions = {
+          from: 'Maarfapad project <info@maarfapad.xyz>',
+          to: req.body.email,
+          subject: 'Maarfapad sign up',
+          html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
+        };
+        // check if email address exists and can receive emails
+        emailCheck(req.body.email)
+          .then((result) => {
+            if (result === true) {
+              // hash and salt pass
+              auth.hash(req.body.password, function (err, hashed) {
+                req.body.password = hashed; // replace plain pass with hashed pass
+                request(EMPTY_URL, function (error, resp, data) {
+                  if (resp.statusMessage === 'OK') {
+                    if (!error) {
+                      db.multipart.insert(
+                        req.body,
+                        [{ name: 'home', data: data, content_type: 'text/html' }],
+                        id,
+                        function (err, body) {
+                          if (!err) {
+                            // email to confirm successful action
+                            smtpTransport.sendMail(mailOptions, function (err, response) {
+                              if (!err) {
+                                // redirect to login page if successful
+                                req.flash('login-info', 'Account created successfuly! Please login.');
+                                res.redirect('/login');
+                              } else {
+                                logError(err);
+                                req.flash('signup-info', 'An error occured. Please try again later');
+                                res.redirect('/signup');
+                              }
+                            });
                           }
-                        } else {
-                          logError('Failed to retrieve template Wiki from CDN');
-                          req.flash('signup-info','Failed to create account. Try again later');
-                          res.redirect('/signup');
-                        }
-                      });
-                    });
+                        });
+                    } else {
+                      logError(error);
+                      req.flash('signup-info', 'An error occured. Please try again later');
+                      res.redirect('/signup');
+                    }
                   } else {
-                    req.flash('signup-info','Something is wrong with the email you supplied.');
+                    logError('Failed to retrieve template Wiki from CDN');
+                    req.flash('signup-info', 'Failed to create account. Try again later');
                     res.redirect('/signup');
                   }
-                }).catch((err) => {
-                  logError(err);
-                  req.flash('signup-info','An error occured. Please try again later');
-                  res.redirect('/signup');
                 });
+              });
+            } else {
+              req.flash('signup-info', 'Something is wrong with the email you supplied.');
+              res.redirect('/signup');
             }
-          }
-        });
-      } else {
-        res.redirect('/notice');
+          }).catch((err) => {
+            logError(err);
+            req.flash('signup-info', 'An error occured. Please try again later');
+            res.redirect('/signup');
+          });
       }
-    } else {
-      logError(err);
-      req.flash('signup-info','An error occured. Please try again later');
-      res.redirect('/signup');
     }
   });
 });
@@ -405,7 +390,7 @@ app.get('/delete_account', function (req, res) {
  */
 app.get('/wiki/:name', function (req, res) {
   var name = req.params.name
-  console.log(req.cookies);
+  if (req.cookies['mpad-offline'] === 'true') return res.redirect('/login');
   if (req.user) {
     var userid = req.user.id
     db.attachment.get(userid, name, function (err, body) {
@@ -454,6 +439,8 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
       }
       var wikiCount = Object.keys(body._attachments).length;
       if (wikiCount === 2) {
+        // Free accounts are restricted to 2 wikis only.
+        // Tiers will be added later
         return res.sendStatus(204); // processed but ignored
       } else {
         request(url, function (error, response, data) {
