@@ -30,6 +30,7 @@ var recovery = require('./routes/recovery');
 var about = require('./routes/about');
 var changeFeed = require('./routes/changefeed');
 var offline = require('./routes/offline');
+var explore = require('./routes/explore');
 
 // prepare database drive
 var nano = require('nano')(config.database);
@@ -183,6 +184,7 @@ app.use('/recovery', recovery);
 app.use('/about', about);
 app.use('/offline', offline);
 app.use('/changefeed',changeFeed);
+app.use('/explore', explore);
 
 // create a user account then redirect to index page
 app.post('/create_user', function (req, res, next) {
@@ -193,7 +195,8 @@ app.post('/create_user', function (req, res, next) {
   }, function (err, body) {
     if (!err) {
       if (body.rows.length > 0) {
-        res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
+        req.flash('signup-info', 'An account with that email already exists.');
+        res.redirect('/signup');
       } else {
         const mailOptions = {
           from: 'Maarfapad project <info@maarfapad.xyz>',
@@ -334,7 +337,7 @@ app.post('/reset', function (req, res) {
                   res.redirect('/recovery');
                 } else {
                   logError(err);
-                  req.flash('recovery-info',`Something went wrong. Email not sent because: ${err.message}.`);
+                  req.flash('recovery-info','Something went wrong. Email not sent. Please try again later');
                   res.redirect('/recovery');
                 }
               });
@@ -420,7 +423,7 @@ app.put('/wiki/:name/:rev', function (req, res) {
         res.sendStatus(200);
       } else {
         logError(err);
-        res.send(500, 'Server error. Please try again later.');
+        res.sendStatus(500);
       }
     });
   } else res.sendStatus(401);
@@ -500,7 +503,7 @@ app.get('/user', function (req, res) {
         res.send(body);
       } else {
         logError(err);
-        res.send(500,'Server error. Please try again later.');
+        res.sendStatus(500);
       }
     });
   } else res.sendStatus(401);
