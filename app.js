@@ -6,6 +6,7 @@ var logger = require('morgan');
 var session = require('express-session');
 var MemoryStore = require('memorystore')(session);
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var auth = require('passport-local-authenticate');
@@ -26,18 +27,24 @@ var signup = require('./routes/signup');
 var login = require('./routes/login');
 var account = require('./routes/account');
 var recovery = require('./routes/recovery');
-var notice = require('./routes/notice');
 var about = require('./routes/about');
 var changeFeed = require('./routes/changefeed');
+var offline = require('./routes/offline');
+var explore = require('./routes/explore');
 
 // prepare database drive
 var nano = require('nano')(config.database);
 var db = nano.db.use('maarfapad');
 
-// log file stream
-var logStream = fs.createWriteStream(path.join(__dirname + '/logs/loggings.log'),{
-  flags: 'a'
-});
+// For logging errors
+function logError (err = 'This is an error') {
+  var date = new Date();
+  var file = fs.createWriteStream(path.join(__dirname + '/logs/couch-error.log'),{
+    flags: 'a'
+  });
+  file.write('\n\n'+ date.toUTCString() + '\n' + err);
+  file.end();
+};
 
 var app = express();
 app.use(helmet());
@@ -46,25 +53,37 @@ app.use(helmet());
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-app.use('/error.html', express.static(__dirname + '/public/error.html',{setHeaders: function (res, path, stat) {
-  res.set('Content-Type', 'text/html');
-}}));
 app.use('/edition_index.json', express.static(__dirname + '/public/edition_index.json',{setHeaders: function (res, path, stat) {
   res.set('Content-Type', 'application/json');
 }}));
+app.use('/manifest.json', express.static(__dirname + '/public/manifest.json',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'application/json');
+}}));
 app.use('/wiki/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
-app.use('/wiki', express.static(__dirname + '/public' + '/javascripts'));
+app.use('/favicon.ico', express.static(__dirname + '/public' + '/favicon.ico'));
+app.use('/sw.js', express.static(__dirname + '/public' + '/javascripts/sw.js',{setHeaders: function (res, path, stat) {
+  res.set('Content-Type', 'application/javascript');
+}}));
 app.use('/images', express.static(__dirname + '/public' + '/images'));
+app.use('/javascript', express.static(__dirname + '/public' + '/javascripts'));
+app.use('/stylesheets', express.static(__dirname + '/public' + '/stylesheets'));
+
 if (process.env.NODE_ENV === 'development') {
   app.use(logger('dev'));
 } else {
+  // log file stream
+  var logStream = fs.createWriteStream(path.join(__dirname + '/logs/loggings.log'), {
+    flags: 'a'
+  });
   app.use(logger('combined',{
     skip: function (req,res) { return res.statusCode < 400 },
     stream: logStream
   }));
 }
+
 app.use(bodyParser.raw({ type: 'text/html', limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser());
 app.use(expressSanitized.middleware());
 expressSanitized.sanitizeParams(app, ['name', 'rev', 'wikiType', 'wikiName']);
 app.use(express.static(path.join(__dirname, 'public')));
@@ -105,12 +124,13 @@ passport.use(new LocalStrategy({
         return done(err);
       } else {
         if (body.rows.length === 0) {
-          return done(null, false, req.flash('info', 'Incorrect email'));
+          return done(null, false, req.flash('login-info', 'Incorrect email'));
         }
         body.rows.forEach(function (user) {
           auth.verify(password, user.value, function (err, verified) {
+            if (err) logError(err);
             if (verified === false) {
-              return done(null, false, req.flash('info', 'Incorrect password'));
+              return done(null, false, req.flash('login-info', 'Incorrect password'));
             }
             if (verified === true) {
               return done(null, user);
@@ -129,11 +149,13 @@ passport.serializeUser(function (user, done) {
 // deserialise user
 passport.deserializeUser(function (id, done) {
   db.view('user', 'verify', { 'key': id }, function (err, body) {
-    if (!err) {
-      body.rows.forEach(function (user) {
-        done(err, user);
-      });
+    if (err) {
+      logError(err);
+      done(err,null);
     }
+    body.rows.forEach(function (user) {
+      done(err, user);
+    });
   });
 });
 
@@ -159,83 +181,81 @@ app.use('/signup', signup);
 app.use('/login', login);
 app.use('/account', account);
 app.use('/recovery', recovery);
-app.use('/notice', notice);
 app.use('/about', about);
+app.use('/offline', offline);
 app.use('/changefeed',changeFeed);
+app.use('/explore', explore);
 
 // create a user account then redirect to index page
 app.post('/create_user', function (req, res, next) {
-  db.view('user', 'email', { include_docs: false }, function (err, body) {
+  var id = shortid.generate();
+  // check for account duplicate
+  db.view('user', 'verify', {
+    'key': req.body.email
+  }, function (err, body) {
     if (!err) {
-      // check user limit during testing period. To be removed later
-      if (body.total_rows < 21) {
-        var id = shortid.generate();
-        // check for account duplicate
-        db.view('user', 'verify', {
-          'key': req.body.email
-        }, function (err, body) {
-          if (!err) {
-            if (body.rows.length > 0) {
-              res.send(`<p>That email already exists<p><a href='/signup'>Go back</a>`);
-            } else {
-              const mailOptions = {
-                from: 'Maarfapad project <info@maarfapad.xyz>',
-                to: req.body.email,
-                subject: 'Maarfapad sign up',
-                html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
-              };
-              // check if email address exists and can receive emails
-              emailCheck(req.body.email)
-                .then((result) => {
-                  if (result === true) {
-                    // hash and salt pass
-                    auth.hash(req.body.password, function (err, hashed) {
-                      req.body.password = hashed; // replace plain pass with hashed pass
-                      request(EMPTY_URL, function (error, resp, data) {
-                        if (resp.statusMessage === 'OK') {
-                          if (!error) {
-                            db.multipart.insert(
-                              req.body,
-                              [{ name: 'home', data: data, content_type: 'text/html' }],
-                              id,
-                              function (err, body) {
-                                if (!err) {
-                                  // email to confirm successful action
-                                  smtpTransport.sendMail(mailOptions, function (err, response) {
-                                    if (!err) {
-                                      // redirect to login page if successful
-                                      res.redirect('/login');
-                                    } else {
-                                      console.log(err);
-                                      res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
-                                    }
-                                  });
-                                }
-                              });
-                          } else {
-                            console.log(error);
-                            res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
-                          }
-                        } else {
-                          res.send(`<p>Something went wrong. Please try again later.</p><br><a href='/signup'>Go back</a>`);
-                        }
-                      });
-                    });
-                  } else {
-                    res.send(`<p>Something's wrong with the email you supplied. Please try again.</p><br><a href='/signup'>Go back</a>`)
-                  }
-                }).catch((err) => {
-                  console.log(err);
-                  res.send('Error:' + err.message + `<br><a href='/signup'>Go back</a>`);
-                });
-            }
-          }
-        });
+      if (body.rows.length > 0) {
+        req.flash('signup-info', 'An account with that email already exists.');
+        res.redirect('/signup');
       } else {
-        res.redirect('/notice');
+        const mailOptions = {
+          from: 'Maarfapad project <info@maarfapad.xyz>',
+          to: req.body.email,
+          subject: 'Maarfapad sign up',
+          html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
+        };
+        // check if email address exists and can receive emails
+        emailCheck(req.body.email)
+          .then((result) => {
+            if (result === true) {
+              // hash and salt pass
+              auth.hash(req.body.password, function (err, hashed) {
+                req.body.password = hashed; // replace plain pass with hashed pass
+                request(EMPTY_URL, function (error, resp, data) {
+                  if (resp.statusMessage === 'OK') {
+                    if (!error) {
+                      db.multipart.insert(
+                        req.body,
+                        [{ name: 'home', data: data, content_type: 'text/html' }],
+                        id,
+                        function (err, body) {
+                          if (!err) {
+                            // email to confirm successful action
+                            smtpTransport.sendMail(mailOptions, function (err, response) {
+                              if (!err) {
+                                // redirect to login page if successful
+                                req.flash('login-info', 'Account created successfuly! Please login.');
+                                res.redirect('/login');
+                              } else {
+                                logError(err);
+                                req.flash('signup-info', 'An error occured. Please try again later');
+                                res.redirect('/signup');
+                              }
+                            });
+                          }
+                        });
+                    } else {
+                      logError(error);
+                      req.flash('signup-info', 'An error occured. Please try again later');
+                      res.redirect('/signup');
+                    }
+                  } else {
+                    logError('Failed to retrieve template Wiki from CDN');
+                    req.flash('signup-info', 'Failed to create account. Try again later');
+                    res.redirect('/signup');
+                  }
+                });
+              });
+            } else {
+              req.flash('signup-info', 'Something is wrong with the email you supplied.');
+              res.redirect('/signup');
+            }
+          }).catch((err) => {
+            logError(err);
+            req.flash('signup-info', 'An error occured. Please try again later');
+            res.redirect('/signup');
+          });
       }
-    } else {
-      next(err);
     }
   });
 });
@@ -246,21 +266,26 @@ app.post('/change_email', function (req, res) {
     var id = req.user.id
     var data = req.body.newemail;
     db.view('user', 'verify', { 'key': data }, function (err, body) {
+      if (err) {
+        logError(err);
+        return res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
+      }
       if (body.rows.length > 0) {
-        res.send(`<p id='flash'>That email is already in use by another account</p><br><a href='/account'>Go back</a>`);
+        return res.send(`<p id='flash'>That email is already in use by another account</p><br><a href='/account'>Go back</a>`);
       } else {
         db.atomic('user', 'updateEmail', id, { value: data }, function (err, body) {
           if (!err) {
             req.session.destroy(function (err) {
-              res.redirect('/login');
+              return res.redirect('/login');
             });
           } else {
-            res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
+            logError(err);
+            return res.send(`<p id='flash'>Something went wrong. Please try again later</p>`);
           }
         });
       }
     });
-  }
+  } else res.sendStatus(401);
 });
 
 // change password
@@ -275,6 +300,7 @@ app.post('/change_password', function (req, res) {
           if (!err) {
             res.send(`<p>Password change successful</p><br><a href='/'>Go back home</a>`);
           } else {
+            logError(err);
             res.send(`<p id='flash'>Something went wrong. Please try again later</p><br><a href='/'>Go back home</a>`);
           }
         });
@@ -282,7 +308,7 @@ app.post('/change_password', function (req, res) {
     } else {
       res.send(`<p id='flash'>Passwords do not match</p><br><a href='/account'>Try again</a>`);
     }
-  }
+  } else res.sendStatus(401);
 });
 
 // reset password
@@ -307,18 +333,24 @@ app.post('/reset', function (req, res) {
               // send recovery email
               smtpTransport.sendMail(mail, function (err, response) {
                 if (!err) {
-                  res.send('<p>A recovery email has been send to your address. Check your mail</p>');
+                  req.flash('recovery-info','A recovery email has been sent. Check your Inbox or Spam folder');
+                  res.redirect('/recovery');
                 } else {
-                  res.send(`<p>Something went wrong. Email not sent because: ${err.message}.</p><a href='/'>Go to home</a>`);
+                  logError(err);
+                  req.flash('recovery-info','Something went wrong. Email not sent. Please try again later');
+                  res.redirect('/recovery');
                 }
               });
             } else {
-              console.log(err);
+              logError(err);
+              req.flash('recovery-info','Something went wrong. Please try again later');
+              res.redirect('/recovery');
             }
           });
         });
       } else {
-        return res.send('<p>Sorry, there is no account associated with that email address</p>')
+        req.flash('recovery-info','Sorry, there is no account associated with that email address');
+        res.redirect('/recovery');
       }
     }
   });
@@ -340,17 +372,16 @@ app.get('/delete_account', function (req, res) {
         var docRev = body._rev;
         db.destroy(req.user.id, docRev, function (err, body) {
           if (!err) {
-            console.log(body);
             req.session.destroy(function (err) {
               res.redirect('/login');
             });
           } else {
-            console.log(err);
+            logError(err);
             res.send(500, 'Server error. Please try again later.');
           }
         });
       } else {
-        console.log(err);
+        logError(err);
         res.send(500, 'Server error. Please try again later.');
       }
     });
@@ -362,6 +393,7 @@ app.get('/delete_account', function (req, res) {
  */
 app.get('/wiki/:name', function (req, res) {
   var name = req.params.name
+  if (req.cookies['mpad-offline'] === 'true') return res.redirect('/login');
   if (req.user) {
     var userid = req.user.id
     db.attachment.get(userid, name, function (err, body) {
@@ -369,7 +401,8 @@ app.get('/wiki/:name', function (req, res) {
         res.header('Content-Type', 'text/html');
         res.send(body);
       } else {
-        res.redirect('/error.html');
+        logError(err);
+        res.redirect('/offline');
       }
     });
   } else {
@@ -378,24 +411,22 @@ app.get('/wiki/:name', function (req, res) {
 });
 
 app.put('/wiki/:name/:rev', function (req, res) {
-  var name = req.params.name
+  var name = req.params.name;
   var revision = req.params.rev;
   if (req.user) {
     var userid = req.user.id
     db.attachment.insert(userid, name, req.body, 'text/html', { rev: revision }, function (err, body) {
-      if (err) {
-        if (err.statusCode === 413) res.sendStatus(413); // file too big
-        console.log(err);
+      if (!err) {
+        nano.db.compact('maarfapad',function (err, body) {
+          if (err) logError('Error on put: ' + err);
+        });
+        res.sendStatus(200);
+      } else {
+        logError(err);
         res.sendStatus(500);
       }
-      nano.db.compact('maarfapad',function (err, body) {
-        if (err) console.log('Error on put:',err);
-      });
-      res.sendStatus(200);
     });
-  } else {
-    res.sendStatus(401);
-  }
+  } else res.sendStatus(401);
 });
 
 app.get('/:wikiType/:wikiName/:rev', function (req, res) {
@@ -405,17 +436,28 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
   var userid = req.user.id;
   function createWiki (id,name,rev,url) {
     db.show('user', 'getUser', id, function (err, body) {
-      if (err) return res.sendStatus(500);
+      if (err) {
+        logError(err);
+        return res.sendStatus(500);
+      }
       var wikiCount = Object.keys(body._attachments).length;
       if (wikiCount === 2) {
+        // Free accounts are restricted to 2 wikis only.
+        // Tiers will be added later
         return res.sendStatus(204); // processed but ignored
       } else {
         request(url, function (error, response, data) {
-          if (error) return res.sendStatus(500);
+          if (error) {
+            logError(error);
+            return res.sendStatus(500);
+          }
           db.attachment.insert(id, name, data, 'text/html', { rev: rev }, function (err, body) {
-            if (err) return res.sendStatus(500);
+            if (err) {
+              logError(err);
+              return res.sendStatus(500);
+            }
             nano.db.compact('maarfapad', function (err, body) {
-              if (err) console.log('Error on compaction:', err);
+              if (err) logError('Error on compaction: ' + err);
             });
             return res.sendStatus(200);
           });
@@ -442,11 +484,11 @@ app.delete('/wiki/:name/:rev', function (req, res) {
     db.attachment.destroy(userid, name, { rev: revision }, function (err, body) {
       if (!err) {
         nano.db.compact('maarfapad',function (err, body) {
-          if (err) console.log('Error on put:',err);
+          if (err) logError('Error on compaction: '+ err);
         });
         res.sendStatus(200);
       } else {
-        console.log(err);
+        logError(err);
         res.sendStatus(500);
       }
     });
@@ -460,7 +502,8 @@ app.get('/user', function (req, res) {
       if (!err) {
         res.send(body);
       } else {
-        console.log(err);
+        logError(err);
+        res.sendStatus(500);
       }
     });
   } else res.sendStatus(401);

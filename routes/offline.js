@@ -3,7 +3,7 @@ var router = express.Router();
 
 /* GET test notice page. */
 router.get('/', function(req, res, next) {
-  res.render('notice');
+  res.render('offline');
 });
 
 module.exports = router;

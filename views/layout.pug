@@ -2,13 +2,27 @@ doctype html
 html
   head
     title= 'Maarfapad'
-    meta(name="viewport" content="width=device-width, initial-scale=1")
     meta(name="google-site-verification" content="3ph84G-yjDz22JRVGOnucwVAzRyFma_yJhJGQeIipKc")
     link(rel='stylesheet' href='/stylesheets/style.css')
-    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css')
+    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css')
     link(rel='stylesheet' href='https://fonts.googleapis.com/icon?family=Material+Icons')
     link(rel='stylesheet' href='https://fonts.googleapis.com/css?family=Comfortaa')
+    link(rel='manifest' href='/manifest.json')
     link(rel='icon' href='/favicon.ico')
+    meta(name='mobile-web-app-capable' content='yes')
+    meta(name='apple-mobile-web-app-capable' content='yes')
+    meta(name='application-name' content='Maarfapad')
+    meta(name='apple-mobile-web-app-title' content='Maarfapad')
+    meta(name='theme-color' content='#ffffff')
+    meta(name='msapplication-navbutton-color' content='#ffffff')
+    meta(name='apple-mobile-web-app-status-bar-style' content='black-translucent')
+    meta(name='msapplication-starturl' content='/wiki/home')
+    meta(name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no')
+    link(rel='icon' type='image/png' sizes='192x192' href='/images/touch-icon192.png')
+    link(rel='apple-touch-icon' type='image/png' sizes='192x192' href='/images/touch-icon192.png')
+    link(rel='icon' type='image/png' sizes='300x300' href='/images/touch-icon300.png')
+    link(rel='apple-touch-icon' type='image/png' sizes='300x300' href='/images/touch-icon300.png')
+
   body
   div(class='navbar-fixed')
     nav
@@ -16,43 +30,79 @@ html
         div(class='container')
           a(href='/' class='brand-logo')
             span(style='font-family: Comfortaa') μ|aarfapad
-          ul(id='nav-mobile' class='right hide-on-med-and-down')
+          a(href='#' data-target='mobile' class='sidenav-trigger')
+            i(class='material-icons') menu
+          ul(class='right hide-on-med-and-down')
             li
               a(href='/signup') Sign up
             li
               a(href='/login') Login
             li
+              a(href='https://cdn.rawgit.com/abesamma/TW5-editions/78846468/empty.html' target='_blank') Demo
+            li
+              a(href='https://abesamma.github.io/maarfapad-blog/index.html' target='_blank') What's New
+            li
               a(href='/about') About
+  ul(class='sidenav' id='mobile')
+    li
+      a(href='/signup') Sign up
+    li
+      a(href='/login') Login
+    li
+      a(href='https://cdn.rawgit.com/abesamma/TW5-editions/78846468/empty.html' target='_blank') Demo
+    li
+      a(href='https://abesamma.github.io/maarfapad-blog/index.html' target='_blank') What's New
+    li
+      a(href='/about') About
+    li
+      div(class='divider')
+    li 
+      a(href='https://twitter.com/maarfapad' target='_blank') Twitter page
+    li 
+      a(href='https://facebook.com/maarfapad/' target='_blank') Facebook page
+    li
+      a(href='mailto:info@maarfapad.xyz') Email Maarfapad
+      div(class='divider')
+    li
+      a(href='https://www.linkedin.com/in/abraham-samma-094047153/') © Abraham Samma, 2018
   div(class='content')
     block content
   footer(class='page-footer black')
     div(class='container')
       div(class='row')
         div(class='col l6 s12')
-          h5(class='white-text') Company Bio
-          | We are a team of college students working on this project like 
-          | it's our full time job. Any amount would help support  
-          | and continue development on this project 
-          | and is greatly appreciated.
+          h5(class='white-text') Powered by TiddlyWiki
+          | Maarfapad makes heavy use of TiddlyWiki, a 
+          | unique, opensource, non-linear notebook for capturing, 
+          | organising and sharing complex information.
         div(class='col l3 s12')
           h5(class='white-text') Links
           ul
-            li Link1
-            li Link2
-            li Link3
-            li Link4
+            li
+              a(href='https://abesamma.github.io/maarfapad-blog/index.html' target='_blank') Blog
+            li 
+              a(href='https://tiddlywiki.com' target='_blank') TiddlyWiki
+            li 
+              a(href='https://tiddlywiki.com/dev' target='_blank') Develop with TiddlyWiki
+            li 
+              a(href='https://groups.google.com/forum/#!forum/tiddlywiki' target='_blank') Forum for TiddlyWiki
+            li 
+              a(href='https://groups.google.com/forum/#!forum/tiddlywikidev' target='_blank') Forum for TiddlyWiki Development
         div(class='col l3 s12')
           h5(class='white-text') Connect
           ul
-            li @Twitter
-            li @Facebook
-            li @Instagram
-            li Company Blog
+            li 
+              a(href='https://twitter.com/maarfapad' target='_blank') Twitter page
+            li 
+              a(href='https://facebook.com/maarfapad/' target='_blank') Facebook page
+            li
+              a(href='mailto:info@maarfapad.xyz') Email Maarfapad
       div(class='footer-copyright')
         li © 
           a(href='https://www.linkedin.com/in/abraham-samma-094047153/') Abraham Samma, 2018
-  script(src='https://code.jquery.com/jquery-3.2.1.min.js')
-  script(src='https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js')
+  script(src='https://code.jquery.com/jquery-2.1.1.min.js')
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js')
+  script(type='text/javascript' src='/javascripts/index.js')
   script(src='//static.getclicky.com/js' type='text/javascript')
   script(type='text/javascript') try{ clicky.init(101080038); }catch(e){}
   

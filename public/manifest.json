@@ -1,0 +1,22 @@
+{
+  "name": "Maarfapad",
+  "short_name": "Maarfapad",
+  "description": "A web app for organising and doing more with your knowledge",
+  "lang": "en-US",
+  "start_url": "/wiki/home",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/images/touch-icon192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/touch-icon300.png",
+      "sizes": "300x300",
+      "type": "image/png"
+    }
+  ]
+}

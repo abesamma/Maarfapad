@@ -9,6 +9,7 @@ block content
         div(class='input-field')
           label(for='email_field') Enter your email address
           input(class='validate' id='email_field' type='email' name='email' required)
+        p(id='flash') #{message}
         button(type='submit' class='btn waves-effect waves-light black') Reset
           i(class='material-icons right') send
 

@@ -2,12 +2,14 @@ extends layout
 
 block content
   div(class='section')
-    h3(class='header grey-text' id='headers') Effortless Knowledge Management
-    h5(class='header' id='sub-headers') Organise your mind online 
-                                       | with Maarfapad, an easy-to-use, wiki 
-                                       | notebook service
+    h3(class='header grey-text' id='headers') Organise & Do More With Your Knowledge
+    h5(class='header' id='sub-headers') Maarfapad is a lean & flexible web  
+                                       | app for personal 
+                                       | knowledge management
     br
-    a(class='btn-large waves-effect waves-light teal' href='/signup') Sign up
+    a(class='btn-large waves-effect waves-light teal' href='/signup') Get Started!
+    p
+    a(href='/login') Login to your account
   div(class='divider')
   div(class='section')
     h5(class='header') What can you do?
@@ -17,71 +19,42 @@ block content
           h2(class='center')
             i(class='material-icons') event_note
           h5(class='center') Note anything
-          p(class='light') Create different notebooks to capture 
+          p(class='light') Create a whole library different notebooks to capture 
                           | different topics and save different media while researching online,
                           | planning a project or just keeping a journal of your life.
       div(class='col s12 m3 l3')
         div(class='icon-block')
           h2(class='center')
-            i(class='material-icons') folder
-          h5(class='center') Be yourself
-          p(class='light') Organise your thoughts however you want 
-                          | without getting lost or worn down.
+            i(class='material-icons') settings
+          h5(class='center') Extend it
+          p(class='light') Add new functionalities with plugins, 
+                          | macros and widgets. Use public APIs 
+                          | to add even more novel functionalities. 
+                          | Your notebooks are your 
+                          | personal data canvas
       div(class='col s12 m3 l3')
         div(class='icon-block')
           h2(class='center') 
             i(class='material-icons') import_export
           h5(class='center') Reuse data
-          p(class='light') Import and export data from your notebooks.
-                         | You can even either link to external media files 
-                         | or store them directly in your notebooks.
-      div(class='col s12 m3 l3')
-        div(class='icon-block')
-          h2(class='center')
-            i(class='material-icons') public
-          h5(class='center') Publish to web
-          p(class='light') Publish your notebooks to the web with just a click via Maarfapad (in active development).
-  div(class='divider')
-  div(class='section')
-    fig
-      img(class='responsive-img' src='/images/demo.png' alt='Maarfapad demo')
-      figcaption Screenshot of Maarfapad notebook
-    br
-    a(class='btn waves-effect waves-light black' href='/') Explore demo
-  div(class='divider')
-  div(class='section')
-    h5(class='header') Maarfapad is:
-    div(class='row')
-      div(class='col s12 m3 l3')
-        div(class='icon-block')
-          h2(class='center')
-            i(class='material-icons') devices
-          h5(class='center') Accessible
-          p(class='light') Notebooks can be used relatively easily on any device type.
-                            |  Notebooks are just HTML files. All you need is your web browser to work with them.
-      div(class='col s12 m3 l3')
-        div(class='icon-block')
-          h2(class='center')
-            i(class='material-icons') settings
-          h5(class='center') Customisable
-          p(class='light') You can customise how your notebooks look or work in any way you want. 
-                            | Maarfapad notebooks make use of open source software and you can freely modify and extend it to suit
-                            | your particular needs or tastes.
+          p(class='light') Import and export data.
+                         | Link to external files 
+                         | or store them directly in your notebooks. 
+                         | Turn your entire notebook into 
+                         | a personal website with any static file hosting service
       div(class='col s12 m3 l3')
         div(class='icon-block')
           h2(class='center')
             i(class='material-icons') signal_wifi_off
-          h5(class='center') Offline ready
-          p(class='light') Maarfapad notebooks can still be viewed
-                            |  even when you have no Internet connection.
-                            | You can even download your notebooks for use
-                            | offline like a normal document and upload
-                            | it back in to the cloud when your connection is restored.
-      div(class='col s12 m3 l3')
-        div(class='icon-block')
-          h2(class='center')
-            i(class='material-icons') flash_on
-          h5(class='center') Extensible and Powerful
-          p(class='light') Maarfapad notebooks have access to lots of neat, open source
-                           |  plugins as well as native cloud services that are still in active development that can give
-                           | you ever more powerful knowledge management capabilities.
+          h5(class='center') Works Offline
+          p(class='light') Use Maarfapad online and  
+                         | offline. Save your notebooks to Maarfapad, 
+                         | or save to your local machine for complete offline use.
+                         | You can also upload notebooks back into the cloud!
+  div(class='divider')
+  div(class='section')
+    fig
+      img(class='responsive-img' src='/images/demo.png' alt='Maarfapad demo')
+      figcaption A Notebook hosted at Maarfapad
+    br
+    a(class='btn waves-effect waves-light black' href='https://cdn.rawgit.com/abesamma/TW5-editions/78846468/empty.html' target='_blank') Explore demo

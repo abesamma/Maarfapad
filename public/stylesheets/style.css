@@ -6,10 +6,10 @@ body {
 
 @media screen and (max-width: 700px) {
   h3#headers {
-    font-size: 25px;
+    font-size: 30px;
   }
   h5#sub-headers {
-    font-size: 15px;
+    font-size: 20px;
   }
 }
 
@@ -35,10 +35,10 @@ li.collection-item {
 }
 
 .content {
-  padding-top: 50px;
   margin: auto;
   width: 65%;
   text-align: center;
+  padding-bottom: 5vh;
 }
 
 p#flash {
