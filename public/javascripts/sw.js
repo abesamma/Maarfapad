@@ -162,7 +162,7 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
-    } else if (url.pathname.match(/^\/(|signup|login|about|recovery|notice|recovery|account|)$/)) {
+    } else if (url.pathname.match(/^\/(|signup|login|about|recovery|notice|account|)$/)) {
         // wipe out data after logging out
         event.respondWith(
             fetch(event.request).then(function (res) {

@@ -3,7 +3,7 @@
   "short_name": "Maarfapad",
   "description": "A web app for organising and doing more with your knowledge",
   "lang": "en-US",
-  "start_url": "/wiki/home",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#ffffff",
