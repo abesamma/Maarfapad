@@ -39,7 +39,7 @@ var db = nano.db.use('maarfapad');
 // For logging errors
 function logError (err = 'This is an error') {
   var date = new Date();
-  var file = fs.createWriteStream(path.join(__dirname + '/logs/couch-error.log'),{
+  var file = fs.createWriteStream(path.join(__dirname + '/mnt/couch-error.log'),{
     flags: 'a'
   });
   file.write('\n\n'+ date.toUTCString() + '\n' + err);
@@ -72,7 +72,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(logger('dev'));
 } else {
   // log file stream
-  var logStream = fs.createWriteStream(path.join(__dirname + '/logs/loggings.log'), {
+  var logStream = fs.createWriteStream(path.join(__dirname + '/mnt/loggings.log'), {
     flags: 'a'
   });
   app.use(logger('combined',{
@@ -417,9 +417,6 @@ app.put('/wiki/:name/:rev', function (req, res) {
     var userid = req.user.id
     db.attachment.insert(userid, name, req.body, 'text/html', { rev: revision }, function (err, body) {
       if (!err) {
-        nano.db.compact('maarfapad',function (err, body) {
-          if (err) logError('Error on put: ' + err);
-        });
         res.sendStatus(200);
       } else {
         logError(err);
@@ -456,9 +453,6 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
               logError(err);
               return res.sendStatus(500);
             }
-            nano.db.compact('maarfapad', function (err, body) {
-              if (err) logError('Error on compaction: ' + err);
-            });
             return res.sendStatus(200);
           });
         });
@@ -483,9 +477,6 @@ app.delete('/wiki/:name/:rev', function (req, res) {
     var userid = req.user.id;
     db.attachment.destroy(userid, name, { rev: revision }, function (err, body) {
       if (!err) {
-        nano.db.compact('maarfapad',function (err, body) {
-          if (err) logError('Error on compaction: '+ err);
-        });
         res.sendStatus(200);
       } else {
         logError(err);
