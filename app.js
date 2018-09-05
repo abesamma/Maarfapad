@@ -417,6 +417,9 @@ app.put('/wiki/:name/:rev', function (req, res) {
     var userid = req.user.id
     db.attachment.insert(userid, name, req.body, 'text/html', { rev: revision }, function (err, body) {
       if (!err) {
+        nano.db.compact('maarfapad',function (err, body) {
+          if (err) logError('Error on put: ' + err);
+        });
         res.sendStatus(200);
       } else {
         logError(err);
@@ -453,6 +456,9 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
               logError(err);
               return res.sendStatus(500);
             }
+            nano.db.compact('maarfapad', function (err, body) {
+              if (err) logError('Error on compaction: ' + err);
+            });
             return res.sendStatus(200);
           });
         });
@@ -477,6 +483,9 @@ app.delete('/wiki/:name/:rev', function (req, res) {
     var userid = req.user.id;
     db.attachment.destroy(userid, name, { rev: revision }, function (err, body) {
       if (!err) {
+        nano.db.compact('maarfapad',function (err, body) {
+          if (err) logError('Error on compaction: '+ err);
+        });
         res.sendStatus(200);
       } else {
         logError(err);
