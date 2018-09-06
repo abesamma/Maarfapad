@@ -151,7 +151,7 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(cachedRequest).then(function (result) {
                     console.log('Serving from cache:', event.request.url);
-                    setTimeout(offlineMsg, 1500);
+                    setTimeout(offlineMsg, 2000);
                     if (!result) {
                         return caches.match('/offline').then(function (offline) {
                             setTimeout(setOfflineCookieMsg, 2000);
