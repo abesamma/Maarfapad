@@ -202,7 +202,7 @@ app.post('/create_user', function (req, res, next) {
           from: 'Maarfapad project <info@maarfapad.xyz>',
           to: req.body.email,
           subject: 'Maarfapad sign up',
-          html: `<p>You are all set!</p><p>If you're an early tester <a href='https://cdn.rawgit.com/abesamma/TW5-editions/86ace22f/Early%20Testers.html'>please read this.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
+          html: `<p>You are all set!</p><p>Get the latest updates via <a href='https://abesamma.github.io/maarfapad-blog/index.html'>Maarfapad's blog.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
         };
         // check if email address exists and can receive emails
         emailCheck(req.body.email)
