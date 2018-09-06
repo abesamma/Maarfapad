@@ -203,11 +203,10 @@ self.addEventListener('fetch', function (event) {
                 return res.clone();
             }).catch(function (){
                 return caches.match(cachedRequest).then(function (result){
-                    if (!result) {
+                    if (result) {
                         offlineMsg();
-                        return new Response('', { status: 404 });
-                    }
-                    return result;
+                        return result;
+                    } else return;
                 });
             })
         );
