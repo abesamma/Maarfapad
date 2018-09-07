@@ -38,12 +38,7 @@ var db = nano.db.use('maarfapad');
 
 // For logging errors
 function logError (err = 'This is an error') {
-  var date = new Date();
-  var file = fs.createWriteStream(path.join(__dirname + '/mnt/couch-error.log'),{
-    flags: 'a'
-  });
-  file.write('\n\n'+ date.toUTCString() + '\n' + err);
-  file.end();
+  console.log(err);
 };
 
 var app = express();
@@ -71,13 +66,8 @@ app.use('/stylesheets', express.static(__dirname + '/public' + '/stylesheets'));
 if (process.env.NODE_ENV === 'development') {
   app.use(logger('dev'));
 } else {
-  // log file stream
-  var logStream = fs.createWriteStream(path.join(__dirname + '/mnt/loggings.log'), {
-    flags: 'a'
-  });
   app.use(logger('combined',{
-    skip: function (req,res) { return res.statusCode < 400 },
-    stream: logStream
+    skip: function (req,res) { return res.statusCode < 400 }
   }));
 }
 
