@@ -16,7 +16,6 @@ var helmet = require('helmet');
 var emailCheck = require('email-check');
 var config = require('./config/secret.json');
 var expressSanitized = require('express-sanitize-escape');
-var fs = require('fs');
 
 // Wiki editions @github.com
 var EMPTY_URL = require('./config/editions').emptyUrl;
@@ -111,14 +110,17 @@ passport.use(new LocalStrategy({
       'key': username
     }, function (err, body) {
       if (err) {
-        return done(err);
+        return done(err, null);
       } else {
         if (body.rows.length === 0) {
           return done(null, false, req.flash('login-info', 'Incorrect email'));
         }
         body.rows.forEach(function (user) {
           auth.verify(password, user.value, function (err, verified) {
-            if (err) logError(err);
+            if (err) {
+              logError(err);
+              return done(err,null);
+            }
             if (verified === false) {
               return done(null, false, req.flash('login-info', 'Incorrect password'));
             }
@@ -142,6 +144,7 @@ passport.deserializeUser(function (id, done) {
     if (err) {
       logError(err);
       done(err,null);
+      return;
     }
     body.rows.forEach(function (user) {
       done(err, user);
