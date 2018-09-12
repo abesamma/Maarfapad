@@ -2,7 +2,7 @@
 self.addEventListener('install', function (event) {
     console.log('Mpad service worker version 0.5.4 installed');
     event.waitUntil(
-        caches.open('mpad-cache-v0.5').then(function (cache){
+        caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
                 'https://fonts.googleapis.com/icon?family=Material+Icons',
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
@@ -53,7 +53,7 @@ self.addEventListener('fetch', function (event) {
     let url = new URL(eventURL);
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
 
-    function setOfflineCookieMsg () {
+    function setOfflineCookieMsg() {
         clients.matchAll().then(function (all) {
             all.map(function (client) {
                 client.postMessage({
@@ -65,7 +65,7 @@ self.addEventListener('fetch', function (event) {
         });
     };
 
-    function offlineMsg () {
+    function offlineMsg() {
         clients.matchAll().then(function (all) {
             all.map(function (client) {
                 client.postMessage({
@@ -86,25 +86,19 @@ self.addEventListener('fetch', function (event) {
     if (event.request.method === 'PUT') {
         // update cache after successful PUT
         caches.open('mpad-cache-v0.5').then(function (cache) {
-            cache.keys().then(function (keys) {
-                keys.forEach(function (request) {
-                    var array = eventURL.match(request.url);
-                    if (array) {
-                        var cachedRequestForPut = new Request(array[0], {
-                            bodyUsed: false,
-                            credentials: "include",
-                            integrity: "",
-                            method: "GET",
-                            redirect: "follow",
-                            referrer: "",
-                            referrerPolicy: "no-referrer-when-downgrade"
-                        });
-                        cache.add(cachedRequestForPut).then(function (){
-                            console.log('Cached copy of saved wiki');
-                        }).catch(function (){
-                            console.log('Failed to cache copy of saved wiki');
-                        });
+            event.request.text().then(function (text) {
+                var str = event.request.url;
+                var url = s.replace(/\/[^\/]+$/, '');
+                var response = new Response(text, {
+                    'status': 200,
+                    'headers': {
+                        'Content-Type': 'text/html'
                     }
+                });
+                cache.put(url, response).then(function () {
+                    console.log('Cached copy of saved wiki');
+                }).catch(function () {
+                    console.log('Failed to cache copy of saved wiki');
                 });
             });
         });
@@ -112,13 +106,13 @@ self.addEventListener('fetch', function (event) {
     }
     // delete request handler
     if (event.request.method === 'DELETE') {
-        caches.open('mpad-cache-v0.5').then(function(cache){
+        caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.delete(event.request.url)
-            .then(function(res){
-                if (res) {
-                    console.log('Deleted:',event.request.url);
-                }
-            });
+                .then(function (res) {
+                    if (res) {
+                        console.log('Deleted:', event.request.url);
+                    }
+                });
         });
         return;
     }
@@ -135,7 +129,7 @@ self.addEventListener('fetch', function (event) {
                     clearTimeout(timer);
                     if (didTimeout) return reject();
                     return resolve(res);
-                }).catch(function (){
+                }).catch(function () {
                     clearTimeout(timer);
                     return reject();
                 });
@@ -196,13 +190,13 @@ self.addEventListener('fetch', function (event) {
         );
     } else {
         event.respondWith(
-            fetch(event.request).then(function (res){
-                caches.open('mpad-cache-v0.5').then(function (cache){
-                    cache.put(cachedRequest,res);
+            fetch(event.request).then(function (res) {
+                caches.open('mpad-cache-v0.5').then(function (cache) {
+                    cache.put(cachedRequest, res);
                 });
                 return res.clone();
-            }).catch(function (){
-                return caches.match(cachedRequest).then(function (result){
+            }).catch(function () {
+                return caches.match(cachedRequest).then(function (result) {
                     if (result) {
                         offlineMsg();
                         return result;
