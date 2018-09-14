@@ -88,7 +88,7 @@ self.addEventListener('fetch', function (event) {
         caches.open('mpad-cache-v0.5').then(function (cache) {
             event.request.text().then(function (text) {
                 var str = event.request.url;
-                var url = s.replace(/\/[^\/]+$/, '');
+                var url = str.replace(/\/[^\/]+$/, '');
                 var response = new Response(text, {
                     'status': 200,
                     'headers': {
