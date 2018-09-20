@@ -1,6 +1,6 @@
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.5.4 installed');
+    console.log('Mpad service worker version 0.5.5 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
