@@ -57,7 +57,7 @@ self.addEventListener('fetch', function (event) {
         clients.matchAll().then(function (all) {
             all.map(function (client) {
                 client.postMessage({
-                    message: 'mpad-offline=true',
+                    message: 'mpad-offline=true; path=/',
                     name: 'mpad-sw',
                     type: 'offline-status-cookie'
                 });
