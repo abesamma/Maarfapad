@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./server.js",
-    "deploy:dev": "npm start",
-    "deploy:prod": "set NODE_ENV=production && npm start"
+    "deploy:dev": "set NODE_ENV=development&&npm start",
+    "deploy:prod": "set NODE_ENV=production&&npm start"
   },
   "dependencies": {
     "body-parser": "~1.18.2",

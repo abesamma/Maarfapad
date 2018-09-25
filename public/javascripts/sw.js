@@ -1,6 +1,6 @@
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.5.5 installed');
+    console.log('Mpad service worker version 0.5.7 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -12,6 +12,10 @@ self.addEventListener('install', function (event) {
                 '/stylesheets/style.css',
                 '/javascripts/index.js',
                 '/offline',
+                '/login',
+                '/about',
+                '/signup',
+                '/recovery',
                 '/favicon.ico',
                 '/manifest.json'
             ]);
@@ -52,6 +56,7 @@ self.addEventListener('fetch', function (event) {
     let eventURL = event.request.url;
     let url = new URL(eventURL);
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
+    let assetWhitelistRegEx = new RegExp(/(offline|login|about|recovery|signup|index.js|style.css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
 
     function setOfflineCookieMsg() {
         clients.matchAll().then(function (all) {
@@ -156,15 +161,15 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
-    } else if (url.pathname.match(/^\/(|signup|login|about|recovery|notice|account|)$/)) {
+    } else if (url.pathname.match(/^\/(login)$/)) {
         // wipe out data after logging out
         event.respondWith(
             fetch(event.request).then(function (res) {
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|js|stylesheets|fonts|icon|favicon|manifest)/g)) return;
-                            return cache.delete(request);
+                            if (request.url.match(assetWhitelistRegEx)) return;
+                            cache.delete(request);
                         });
                     });
                 });
@@ -173,18 +178,28 @@ self.addEventListener('fetch', function (event) {
                 return caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.keys().then(function (keyList) {
                         keyList.forEach(function (request, index, array) {
-                            if (request.url.match(/(offline|javascripts|stylesheets|fonts|icon|favicon|manifest)/g)) return;
-                            return cache.delete(request);
+                            if (request.url.match(assetWhitelistRegEx)) return;
+                            cache.delete(request);
                         });
                     });
-                }).then(function () {
-                    return new Response('', {
-                        'status': 302,
-                        'statusText': 'OK',
-                        'headers': new Headers({
-                            'Location': url.origin + '/wiki/home'
-                        })
-                    });
+                    return cache.match(event.request).then(function (res) {
+                        if (!res) return cache.match('/offline').then(function (offline) { return offline });
+                        return res
+                    })
+                });
+            })
+        );
+    } else if (url.pathname.match(/^\/$/)) {
+        event.respondWith(
+            fetch(event.request).then(function (res) {
+                return res;
+            }).catch(function () {
+                return new Response('', {
+                    'status': 302,
+                    'statusText': 'OK',
+                    'headers': new Headers({
+                        'Location': url.origin + '/wiki/home'
+                    })
                 });
             })
         );
