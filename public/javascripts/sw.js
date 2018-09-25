@@ -1,12 +1,13 @@
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.5.7 installed');
+    console.log('Mpad service worker version 0.5.8 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
                 'https://fonts.googleapis.com/icon?family=Material+Icons',
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
                 'https://code.jquery.com/jquery-2.1.1.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js',
                 'https://fonts.googleapis.com/css?family=Comfortaa',
                 'https://fonts.googleapis.com/css?family=Comfortaa:300&subset=latin-ext',
                 '/stylesheets/style.css',
