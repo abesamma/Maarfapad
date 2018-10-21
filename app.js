@@ -4,7 +4,7 @@ var request = require('request');
 var shortid = require('shortid');
 var logger = require('morgan');
 var session = require('express-session');
-var MemoryStore = require('memorystore')(session);
+var CouchConnect = require('connect-couchdb')(session);
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var passport = require('passport');
@@ -77,9 +77,11 @@ app.use(expressSanitized.middleware());
 expressSanitized.sanitizeParams(app, ['name', 'rev', 'wikiType', 'wikiName']);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  store: new MemoryStore({
-    checkPeriod: 8.64e+7,
-    stale: true
+  store: new CouchConnect({
+    name: config.dbname,
+    username:  config.username,
+    password: config.pass,
+    host: config.host
   }),
   name: 'm|pad',
   secret: config.secret,
