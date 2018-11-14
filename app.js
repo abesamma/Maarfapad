@@ -14,8 +14,11 @@ var flash = require('connect-flash');
 var nodemailer = require("nodemailer");
 var helmet = require('helmet');
 var emailCheck = require('email-check');
-var config = require('./config/secret.json');
 var expressSanitized = require('express-sanitize-escape');
+var config;
+if (process.env.NODE_ENV === 'development') {
+  config = require('./config/dev.secret.json');
+} else config = require('./config/secret.json');
 
 // Wiki editions @github.com
 var EMPTY_URL = require('./config/editions').emptyUrl;
