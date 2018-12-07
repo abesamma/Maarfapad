@@ -9,10 +9,10 @@ ehthumbs.db
 Thumbs.db
 .vscode
 
+dev.secret.json
 *.log
 *.html
 
 maarfapad
 bower_components
 node_modules
-config
