@@ -359,6 +359,9 @@ app.post('/login', passport.authenticate('local', {
   failureRedirect: '/login',
   failureFlash: true
 }), function (req, res) {
+  if (req.cookies['mpad-offline'] === 'true') {
+    return res.clearCookie('mpad-offline', { path: '/' }).redirect('/wiki/home');
+  }
   return res.redirect('/wiki/home');
 });
 
