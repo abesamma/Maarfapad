@@ -1,8 +1,4 @@
 
-importScripts('https://cdnjs.cloudflare.com/ajax/libs/pouchdb/7.0.0/pouchdb.min.js');
-
-const db = new PouchDB('mpad-db');
-
 const offlineSaveMsg = `You are currently offline. 
                 Your notebook has been temporarily saved to your browser's cache. 
                 You can download it on to your device, or save via other means 
@@ -89,6 +85,18 @@ self.addEventListener('fetch', function (event) {
         });
     };
 
+    function cacheUser () {
+        return fetch('/user').then(function (res) {
+            caches.open('mpad-cache-v0.5').then(function (cache) {
+                cache.put('/user', res);
+            }).then(function () {
+                console.log('Cached user');
+            }).catch(function (err) {
+                console.log('Failed to cache user. Error:', err);
+            });
+        });
+    };
+
     if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
     if (event.request.method == 'HEAD') return;
@@ -115,25 +123,12 @@ self.addEventListener('fetch', function (event) {
                     });
                 });
             });
-        }
+        };
         event.respondWith(
             fetch(event.request, {
                 credentials: 'include'
             }).then(function (res) {
                 cacheWiki();
-                let id = url.pathname.replace(/\/[0-9]+[-][ab-z,0-9]+$/, '');
-                db.get(id).then(function (doc) {
-                    doc['revision'] += 1;
-                    db.put({
-                        '_id': doc['_id'],
-                        '_rev': doc['_rev'],
-                        'revision': doc['revision']
-                    }).then(function () { 
-                        console.log('Incremented wiki revision');
-                    }).catch(function (err) {
-                        console.log('Failed to increment revision. Error:', err);
-                    });
-                });
                 return res;
             }).catch(function () {
                 cacheWiki();
@@ -160,82 +155,26 @@ self.addEventListener('fetch', function (event) {
 
     if (event.request.method === 'GET' && regex.test(url.pathname)) {
         event.respondWith(
-            fetch('/user').then(function (res) {
+            fetch(event.request).then(function (res) {
+                cacheUser();
+                console.log('Serving from network:', event.request.url);
                 caches.open('mpad-cache-v0.5').then(function (cache) {
-                    cache.put('/user', res).then(function () {
-                        console.log('Cached user');
-                    }).catch(function () {
-                        console.log('Failed to cache user');
+                    cache.put(event.request.url, res).then(function () {
+                        console.log('Cached url:', event.request.url);
                     });
                 });
-                return res.clone().json().then(function (json) {
-                    for (let wiki in json._attachments) {
-                        return db.get(url.pathname).then(function (doc) {
-                            if (url.pathname.includes(wiki) && json._attachments[wiki]['revpos'] == doc['revision']) {
-                                return caches.match(event.request).then(function (result) {
-                                    if (!result) return fetch(event.request).then(function (res) {
-                                        caches.open('mpad-cache-v0.5').then(function (cache) {
-                                            cache.put(event.request, res);
-                                        });
-                                        return res.clone();
-                                    });
-                                    return result;
-                                })
-                            }
-                            if (url.pathname.includes(wiki) && json._attachments[wiki]['revpos'] != doc['revision']) {
-                                return fetch(event.request).then(function (res) {
-                                    db.get(url.pathname).then(function (doc) {
-                                        db.put({ 
-                                            '_id': url.pathname, 
-                                            '_rev': doc['_rev'], 
-                                            'revision': json._attachments[wiki]['revpos'] 
-                                        });
-                                    });
-                                    caches.open('mpad-cache-v0.5').then(function (cache) {
-                                        cache.put(event.request, res);
-                                    });
-                                    return res.clone();
-                                })
-                            }
-                        }).catch(function (err) {
-                            if (err.status == 404) {
-                                db.put({
-                                    '_id': url.pathname,
-                                    'revision': json._attachments[wiki]['revpos']
-                                });
-                                return fetch(event.request).then(function (res) {
-                                    caches.open('mpad-cache-v0.5').then(function (cache) {
-                                        cache.put(event.request, res);
-                                    });
-                                    return res.clone();
-                                });
-                            }
+                return res.clone();
+            }).catch(function () {
+                return caches.match(event.request.url).then(function (result) {
+                    console.log('Serving from cache:', event.request.url);
+                    setTimeout(offlineMsg, 2000);
+                    if (!result) {
+                        return caches.match('/offline').then(function (offline) {
+                            setTimeout(offlineCookieSetter, 2000);
+                            return offline;
                         });
                     }
-                });
-            }).catch(function () {
-                // work offline if '/user' request fails
-                return caches.open('mpad-cache-v0.5').then(function (cache) {
-                    // if home wiki is gone, safely assume we've logged out
-                    return cache.match('/wiki/home').then(function (result) {
-                        if (!result) {
-                            return new Response('', {
-                                'status': 302,
-                                'statusText': 'OK',
-                                'headers': new Headers({
-                                    'Location': url.origin + '/login'
-                                })
-                            });
-                        }
-                        // if home wiki is present, proceed as usual
-                        return cache.match(event.request).then(function (result) {
-                            if (!result) return cache.match('/offline').then(function (offline) {
-                                return offline;
-                            });
-                            setTimeout(offlineMsg, 2000);
-                            return result;
-                        })
-                    });
+                    return result;
                 });
             })
         );
