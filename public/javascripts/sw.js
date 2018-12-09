@@ -97,6 +97,19 @@ self.addEventListener('fetch', function (event) {
         });
     };
 
+    function fetchAndCacheWiki () {
+        return fetch(event.request).then(function (res) {
+            caches.open('mpad-cache-v0.5').then(function (cache) {
+                cache.put(event.request.url, res);
+            })
+            return res.clone();
+        }).catch(function () {
+            return caches.match('/offline').then(function (offline) {
+                return offline;
+            });
+        });
+    }
+
     if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
     if (event.request.method == 'HEAD') return;
@@ -155,26 +168,42 @@ self.addEventListener('fetch', function (event) {
 
     if (event.request.method === 'GET' && regex.test(url.pathname)) {
         event.respondWith(
-            fetch(event.request).then(function (res) {
-                cacheUser();
-                console.log('Serving from network:', event.request.url);
-                caches.open('mpad-cache-v0.5').then(function (cache) {
-                    cache.put(event.request.url, res).then(function () {
-                        console.log('Cached url:', event.request.url);
-                    });
-                });
-                return res.clone();
-            }).catch(function () {
-                return caches.match(event.request.url).then(function (result) {
-                    console.log('Serving from cache:', event.request.url);
-                    setTimeout(offlineMsg, 2000);
-                    if (!result) {
-                        return caches.match('/offline').then(function (offline) {
-                            setTimeout(offlineCookieSetter, 2000);
-                            return offline;
+            caches.match('/user').then(function (cachedUser) {
+                if (!cachedUser) {
+                    cacheUser();
+                    return fetchAndCacheWiki();
+                }
+                return cachedUser.json().then(function (cachedJson) {
+                    return fetch('/user').then(function (res) {
+                        return res.json();
+                    }).then(function (fetchedJson) {
+                        let wikiName = url.pathname.replace(/\/[wiki]+\//, '');
+                        let cachedRevpos = cachedJson._attachments[wikiName]['revpos'];
+                        let fetchedRevpos = fetchedJson._attachments[wikiName]['revpos'];
+                        if (!fetchedRevpos || !cachedRevpos) {
+                            cacheUser();
+                            return fetchAndCacheWiki()
+                        } else if (fetchedRevpos == cachedRevpos) {
+                            return caches.match(event.request).then(function (result) {
+                                if (!result) {
+                                    return fetchAndCacheWiki();
+                                }
+                                return result;
+                            });
+                        } else if (fetchedRevpos != cachedRevpos) {
+                            cacheUser();
+                            return fetchAndCacheWiki();
+                        }
+                    }).catch(function () {
+                        return caches.open('mpad-cache-v0.5').then(function (cache) {
+                            return cache.match(event.request).then(function (result) {
+                                if (!result) return cache.match('/offline').then(function (offline) {
+                                    return offline;
+                                });
+                                return result;
+                            });
                         });
-                    }
-                    return result;
+                    });
                 });
             })
         );
