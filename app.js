@@ -118,7 +118,7 @@ passport.use(new LocalStrategy({
         return done(err, null);
       } else {
         if (body.rows.length === 0) {
-          return done(null, false, req.flash('login-info', 'Incorrect email'));
+          return done(null, false, req.flash('login-info', 'No account is associated with provided email'));
         }
         body.rows.forEach(function (user) {
           auth.verify(password, user.value, function (err, verified) {
