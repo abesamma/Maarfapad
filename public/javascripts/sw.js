@@ -113,7 +113,7 @@ self.addEventListener('fetch', function (event) {
     if (event.request.method === 'POST') return;
     if (event.request.method == 'OPTIONS') return;
     if (event.request.method == 'HEAD') return;
-    if (event.request.url.includes('changefeed')) return;
+    if (url.pathname.match(/^\/changefeed$/)) return;
     // Chrome DevTools opening will trigger these o-i-c requests, which this SW can't handle.
     if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') return;
     if (event.request.method === 'PUT') {
@@ -142,6 +142,9 @@ self.addEventListener('fetch', function (event) {
                 credentials: 'include'
             }).then(function (res) {
                 cacheWiki();
+                return res;
+            }).then(function (res) {
+                cacheUser();
                 return res;
             }).catch(function () {
                 cacheWiki();
