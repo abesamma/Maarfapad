@@ -5,7 +5,7 @@ const offlineSaveMsg = `You are currently offline.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.0 installed');
+    console.log('Mpad service worker version 0.7.1 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -288,7 +288,7 @@ self.addEventListener('fetch', function (event) {
                             });
                         });
                     }
-                    if (event.request.url.includes('/user')) return result;
+                    if (url.pathname.match(/\/user/)) return result;
                     offlineMsg();
                     return result;
                 });
