@@ -48,13 +48,8 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
     
     let url = new URL(event.request.url);
-<<<<<<< HEAD
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
-=======
-    const regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
-    const assetWhitelistRegEx = new RegExp(/(offline|images|login|about|recovery|signup|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
->>>>>>> overwrite-check-branch
 
     function offlineMsgSetter (url, type) {
         switch (type) {
@@ -313,11 +308,7 @@ self.addEventListener('fetch', function (event) {
                         });
                     }
                     if (url.pathname.match(/\/user/)) return result;
-<<<<<<< HEAD
-                    offlineMsg();
-=======
                     offlineMsgSetter(url, 'offline-message');
->>>>>>> overwrite-check-branch
                     return result;
                 });
             })
