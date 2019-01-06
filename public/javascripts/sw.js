@@ -3,9 +3,10 @@ const offlineSaveMsg = `You are currently offline.
                 Your notebook has been temporarily saved to your browser's cache. 
                 You can download it on to your device, or save via other means 
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
+const offlineMsg = 'You are currently working offline.';
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.0 installed');
+    console.log('Mpad service worker version 0.7.4 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -50,16 +51,34 @@ self.addEventListener('fetch', function (event) {
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|recovery|signup|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
 
-    function offlineMsg(msg='You are currently working offline.') {
-        clients.matchAll().then(function (all) {
-            all.map(function (client) {
-                client.postMessage({
-                    message: msg,
-                    name: 'mpad-sw',
-                    type: 'offline-message'
+    function offlineMsgSetter (url, type) {
+        switch (type) {
+            case 'offline-message': clients.matchAll().then(function (all) {
+                let filter = all.filter(function (client) {
+                    return url == client.url;
+                });
+                filter.map(function (client) {
+                    client.postMessage({
+                        message: offlineMsg,
+                        name: 'mpad-sw',
+                        type: type
+                    });
                 });
             });
-        });
+            case 'offline-save': clients.matchAll().then(function (all) {
+                let filter = all.filter(function (client) {
+                    return url == client.url;
+                });
+                filter.map(function (client) {
+                    client.postMessage({
+                        message: offlineSaveMsg,
+                        name: 'mpad-sw',
+                        type: type
+                    });
+                });
+            });
+            default: return;
+        }
     };
 
     function offlineCookieSetter () {
@@ -118,11 +137,11 @@ self.addEventListener('fetch', function (event) {
     if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') return;
     if (event.request.method === 'PUT') {
         let req = event.request.clone();
+        let str = event.request.url;
+        let url = str.replace(/\/[^\/]+$/, '');
         function cacheWiki () {
             return caches.open('mpad-cache-v0.5').then(function (cache) {
                 req.text().then(function (text) {
-                    let str = event.request.url;
-                    let url = str.replace(/\/[^\/]+$/, '');
                     let response = new Response(text, {
                         'status': 200,
                         'headers': {
@@ -151,7 +170,7 @@ self.addEventListener('fetch', function (event) {
                 let response = new Response('', {
                     status: 200
                 });
-                offlineMsg(offlineSaveMsg);
+                setTimeout(function () { return offlineMsgSetter(url, 'offline-save'); }, 1000);
                 return response;
             })
         )
@@ -288,8 +307,8 @@ self.addEventListener('fetch', function (event) {
                             });
                         });
                     }
-                    if (event.request.url.includes('/user')) return result;
-                    offlineMsg();
+                    if (url.pathname.match(/\/user/)) return result;
+                    offlineMsgSetter(url, 'offline-message');
                     return result;
                 });
             })
