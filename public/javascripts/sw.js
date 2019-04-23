@@ -49,6 +49,9 @@ self.addEventListener('fetch', function (event) {
     let url = new URL(event.request.url);
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
+    let fetchOptions = {
+        credentials: 'include'
+    };
 
     function offlineMsg(msg='You are currently working offline.') {
         clients.matchAll().then(function (all) {
@@ -86,7 +89,7 @@ self.addEventListener('fetch', function (event) {
     };
 
     function cacheUser () {
-        return fetch('/user').then(function (res) {
+        return fetch('/user', fetchOptions).then(function (res) {
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put('/user', res);
             }).then(function () {
@@ -98,7 +101,7 @@ self.addEventListener('fetch', function (event) {
     };
 
     function fetchAndCacheWiki () {
-        return fetch(event.request).then(function (res) {
+        return fetch(event.request, fetchOptions).then(function (res) {
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put(event.request.url, res);
             })
@@ -138,9 +141,7 @@ self.addEventListener('fetch', function (event) {
             });
         };
         event.respondWith(
-            fetch(event.request, {
-                credentials: 'include'
-            }).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
                 cacheWiki();
                 return res;
             }).then(function (res) {
@@ -177,7 +178,7 @@ self.addEventListener('fetch', function (event) {
                     return fetchAndCacheWiki();
                 }
                 return cachedUser.json().then(function (cachedJson) {
-                    return fetch('/user').then(function (res) {
+                    return fetch('/user', fetchOptions).then(function (res) {
                         return res.json();
                     }).then(function (fetchedJson) {
                         let wikiName = url.pathname.replace(/\/[wiki]+\//, '');
@@ -213,7 +214,7 @@ self.addEventListener('fetch', function (event) {
     } else if (url.pathname.match(/^\/(login)$/)) {
         // wipe out data after logging out
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
                 clearCache();
                 return res;
             }).catch(function () {
@@ -231,7 +232,7 @@ self.addEventListener('fetch', function (event) {
          * default to wiki
          */
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
                 return res;
             }).catch(function () {
                 return new Response('', {
@@ -252,7 +253,7 @@ self.addEventListener('fetch', function (event) {
         event.respondWith(
             caches.match(event.request).then(function (result) {
                 if (!result) {
-                    return fetch(event.request).then(function (res) {
+                    return fetch(event.request, fetchOptions).then(function (res) {
                         caches.open('mpad-cache-v0.5').then(function (cache) {
                             cache.put(event.request, res);
                         });
@@ -269,7 +270,7 @@ self.addEventListener('fetch', function (event) {
          * when offline.
          */
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
@@ -277,7 +278,7 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(event.request).then(function (result) {
                     if (!result) {
-                        return fetch(event.request).then(function (res) {
+                        return fetch(event.request, fetchOptions).then(function (res) {
                             caches.open('mpad-cache-v0.5').then(function (cache) {
                                 cache.put(event.request, res);
                             });
