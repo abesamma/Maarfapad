@@ -209,6 +209,10 @@ self.addEventListener('fetch', function (event) {
                         });
                     });
                 });
+            }).catch(function () {
+                return fetch(event.request) || caches.match('/offline').then(function (offline) {
+                    return offline;
+                });
             })
         );
     } else if (url.pathname.match(/^\/(login)$/)) {
