@@ -244,7 +244,7 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
-    } else if (url.pathname.match(assetWhitelistRegEx)) {
+    } else if (url.href.match(assetWhitelistRegEx)) {
         /**
          * Assets should come from cache.
          * If not in cache, default to network
