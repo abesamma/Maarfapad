@@ -1,3 +1,12 @@
+/* Note that when hosted on cloudnode,
+ * this application favours local-first
+ * approach. Therefore this service worker
+ * should not allow fetch requests to show
+ * the default cloudnode banner if the
+ * server is down but network is available. 
+ * The user should default to cache
+ * or to the offline page as much as possible.
+ */
 
 const offlineSaveMsg = `You are currently offline. 
                 Your notebook has been temporarily saved to your browser's cache. 
@@ -5,7 +14,7 @@ const offlineSaveMsg = `You are currently offline.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.2 installed');
+    console.log('Mpad service worker version 0.7.5 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -90,18 +99,22 @@ self.addEventListener('fetch', function (event) {
 
     function cacheUser () {
         return fetch('/user', fetchOptions).then(function (res) {
+            if (res.status >= 400) return reject();
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put('/user', res);
             }).then(function () {
                 console.log('Cached user');
             }).catch(function (err) {
-                console.log('Failed to cache user. Error:', err);
+                console.error('Failed to cache user. Error:', err);
             });
+        }).catch(function () {
+            return;
         });
     };
 
     function fetchAndCacheWiki () {
         return fetch(event.request, fetchOptions).then(function (res) {
+            if (res.status >= 400) reject();
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put(event.request.url, res);
             })
@@ -142,6 +155,7 @@ self.addEventListener('fetch', function (event) {
         };
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 cacheWiki();
                 return res;
             }).then(function (res) {
@@ -179,6 +193,7 @@ self.addEventListener('fetch', function (event) {
                 }
                 return cachedUser.json().then(function (cachedJson) {
                     return fetch('/user', fetchOptions).then(function (res) {
+                        if (res.status >= 400) return reject();
                         return res.json();
                     }).then(function (fetchedJson) {
                         let wikiName = url.pathname.replace(/\/[wiki]+\//, '');
@@ -210,7 +225,11 @@ self.addEventListener('fetch', function (event) {
                     });
                 });
             }).catch(function () {
-                return fetch(event.request) || caches.match('/offline').then(function (offline) {
+                /*Incase the /user url does not exist in cache
+                * then default to network, or offline page if
+                * if offline
+                */
+                return fetch(event.request, fetchOptions) || caches.match('/offline').then(function (offline) {
                     return offline;
                 });
             })
@@ -219,6 +238,7 @@ self.addEventListener('fetch', function (event) {
         // wipe out data after logging out
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 clearCache();
                 return res;
             }).catch(function () {
@@ -237,6 +257,7 @@ self.addEventListener('fetch', function (event) {
          */
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 return res;
             }).catch(function () {
                 return new Response('', {
@@ -262,7 +283,7 @@ self.addEventListener('fetch', function (event) {
                             cache.put(event.request, res);
                         });
                         return res.clone();
-                    });
+                    }).catch(function () { return; });
                 }
                 return result;
             })
@@ -275,6 +296,7 @@ self.addEventListener('fetch', function (event) {
          */
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
@@ -283,6 +305,7 @@ self.addEventListener('fetch', function (event) {
                 return caches.match(event.request).then(function (result) {
                     if (!result) {
                         return fetch(event.request, fetchOptions).then(function (res) {
+                            if (res.status >= 400) return reject();
                             caches.open('mpad-cache-v0.5').then(function (cache) {
                                 cache.put(event.request, res);
                             });
