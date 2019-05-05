@@ -8,13 +8,13 @@
  * or to the offline page as much as possible.
  */
 
-const offlineSaveMsg = `You are currently offline. 
+const offlineSaveMsg = `Something went wrong during the save operation. 
                 Your notebook has been temporarily saved to your browser's cache. 
                 You can download it on to your device, or save via other means 
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.5 installed');
+    console.log('Mpad service worker version 0.7.6 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -155,18 +155,18 @@ self.addEventListener('fetch', function (event) {
         };
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
-                if (res.status >= 400) return reject();
+                if (res.status >= 400) return reject(res);
                 cacheWiki();
                 return res;
             }).then(function (res) {
                 cacheUser();
                 return res;
-            }).catch(function () {
+            }).catch(function (res) {
                 cacheWiki();
                 let response = new Response('', {
                     status: 200
                 });
-                offlineMsg(offlineSaveMsg);
+                res ? offlineMsg(offlineSaveMsg + ` Error: ${res.statusText}`) : offlineMsg(offlineSaveMsg);
                 return response;
             })
         )
@@ -296,7 +296,6 @@ self.addEventListener('fetch', function (event) {
          */
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
-                if (res.status >= 400) return reject();
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
@@ -305,7 +304,6 @@ self.addEventListener('fetch', function (event) {
                 return caches.match(event.request).then(function (result) {
                     if (!result) {
                         return fetch(event.request, fetchOptions).then(function (res) {
-                            if (res.status >= 400) return reject();
                             caches.open('mpad-cache-v0.5').then(function (cache) {
                                 cache.put(event.request, res);
                             });
@@ -316,7 +314,8 @@ self.addEventListener('fetch', function (event) {
                             });
                         });
                     }
-                    if (url.pathname.match(/\/user/)) return result;
+                    if (url.pathname.match(/\/user/)) return result; // user requests should not trigger offline message
+                    // other requests should trigger offline message
                     offlineMsg();
                     return result;
                 });
