@@ -1,12 +1,20 @@
+/* Note that when hosted on cloudnode,
+ * this application favours local-first
+ * approach. Therefore this service worker
+ * should not allow fetch requests to show
+ * the default cloudnode banner if the
+ * server is down but network is available. 
+ * The user should default to cache
+ * or to the offline page as much as possible.
+ */
 
-const offlineSaveMsg = `You are currently offline. 
+const offlineSaveMsg = `Something went wrong during the save operation. 
                 Your notebook has been temporarily saved to your browser's cache. 
                 You can download it on to your device, or save via other means 
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
-const offlineMsg = 'You are currently working offline.';
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.4 installed');
+    console.log('Mpad service worker version 0.8.6 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -50,35 +58,18 @@ self.addEventListener('fetch', function (event) {
     let url = new URL(event.request.url);
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
+    let fetchOptions = {};
 
-    function offlineMsgSetter (url, type) {
-        switch (type) {
-            case 'offline-message': clients.matchAll().then(function (all) {
-                let filter = all.filter(function (client) {
-                    return url == client.url;
-                });
-                filter.map(function (client) {
-                    client.postMessage({
-                        message: offlineMsg,
-                        name: 'mpad-sw',
-                        type: type
-                    });
+    function offlineMsg(msg='You are currently working offline.') {
+        clients.matchAll().then(function (all) {
+            all.map(function (client) {
+                client.postMessage({
+                    message: msg,
+                    name: 'mpad-sw',
+                    type: 'offline-message'
                 });
             });
-            case 'offline-save': clients.matchAll().then(function (all) {
-                let filter = all.filter(function (client) {
-                    return url == client.url;
-                });
-                filter.map(function (client) {
-                    client.postMessage({
-                        message: offlineSaveMsg,
-                        name: 'mpad-sw',
-                        type: type
-                    });
-                });
-            });
-            default: return;
-        }
+        });
     };
 
     function offlineCookieSetter () {
@@ -105,19 +96,33 @@ self.addEventListener('fetch', function (event) {
     };
 
     function cacheUser () {
-        return fetch('/user').then(function (res) {
+        return fetch('/user', fetchOptions).then(function (res) {
+            if (res.status >= 400) return reject();
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put('/user', res);
             }).then(function () {
                 console.log('Cached user');
             }).catch(function (err) {
-                console.log('Failed to cache user. Error:', err);
+                console.error('Failed to cache user. Error:', err);
             });
+            return res.clone().json();
+        }).catch(function () {
+            return;
         });
     };
 
+    function cacheAllWikis (json) {
+        let wikis = Object.keys(json._attachments);
+        wikis.forEach(function (wiki) {
+            caches.open('mpad-cache-v0.5').then(function (cache) {
+                cache.add('/wiki/' + wiki);
+            });
+        });
+    }
+
     function fetchAndCacheWiki () {
-        return fetch(event.request).then(function (res) {
+        return fetch(event.request, fetchOptions).then(function (res) {
+            if (res.status >= 400) reject();
             caches.open('mpad-cache-v0.5').then(function (cache) {
                 cache.put(event.request.url, res);
             })
@@ -137,11 +142,11 @@ self.addEventListener('fetch', function (event) {
     if (event.request.cache === 'only-if-cached' && event.request.mode !== 'same-origin') return;
     if (event.request.method === 'PUT') {
         let req = event.request.clone();
-        let str = event.request.url;
-        let url = str.replace(/\/[^\/]+$/, '');
         function cacheWiki () {
             return caches.open('mpad-cache-v0.5').then(function (cache) {
                 req.text().then(function (text) {
+                    let str = event.request.url;
+                    let url = str.replace(/\/[^\/]+$/, '');
                     let response = new Response(text, {
                         'status': 200,
                         'headers': {
@@ -157,20 +162,19 @@ self.addEventListener('fetch', function (event) {
             });
         };
         event.respondWith(
-            fetch(event.request, {
-                credentials: 'include'
-            }).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject(res);
                 cacheWiki();
                 return res;
             }).then(function (res) {
                 cacheUser();
                 return res;
-            }).catch(function () {
+            }).catch(function (res) {
                 cacheWiki();
                 let response = new Response('', {
                     status: 200
                 });
-                setTimeout(function () { return offlineMsgSetter(url, 'offline-save'); }, 1000);
+                res ? offlineMsg(offlineSaveMsg + ` Error: ${res.statusText}`) : offlineMsg(offlineSaveMsg);
                 return response;
             })
         )
@@ -192,11 +196,20 @@ self.addEventListener('fetch', function (event) {
         event.respondWith(
             caches.match('/user').then(function (cachedUser) {
                 if (!cachedUser) {
-                    cacheUser();
-                    return fetchAndCacheWiki();
+                    cacheUser().then(function (json) {
+                        cacheAllWikis(json);
+                    });
+                    return fetch(event.request, fetchOptions).then(function (res) {
+                        return res;
+                    }).catch(function () {
+                        return caches.match('/offline').then(function (offline) {
+                            return offline;
+                        });
+                    });
                 }
                 return cachedUser.json().then(function (cachedJson) {
-                    return fetch('/user').then(function (res) {
+                    return fetch('/user', fetchOptions).then(function (res) {
+                        if (res.status >= 400) return reject();
                         return res.json();
                     }).then(function (fetchedJson) {
                         let wikiName = url.pathname.replace(/\/[wiki]+\//, '');
@@ -227,12 +240,21 @@ self.addEventListener('fetch', function (event) {
                         });
                     });
                 });
+            }).catch(function () {
+                /*Incase the /user url does not exist in cache
+                * then default to network, or offline page if
+                * if offline
+                */
+                return fetch(event.request, fetchOptions) || caches.match('/offline').then(function (offline) {
+                    return offline;
+                });
             })
         );
     } else if (url.pathname.match(/^\/(login)$/)) {
         // wipe out data after logging out
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 clearCache();
                 return res;
             }).catch(function () {
@@ -250,7 +272,8 @@ self.addEventListener('fetch', function (event) {
          * default to wiki
          */
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
+                if (res.status >= 400) return reject();
                 return res;
             }).catch(function () {
                 return new Response('', {
@@ -262,7 +285,7 @@ self.addEventListener('fetch', function (event) {
                 });
             })
         );
-    } else if (url.pathname.match(assetWhitelistRegEx)) {
+    } else if (url.href.match(assetWhitelistRegEx)) {
         /**
          * Assets should come from cache.
          * If not in cache, default to network
@@ -271,12 +294,12 @@ self.addEventListener('fetch', function (event) {
         event.respondWith(
             caches.match(event.request).then(function (result) {
                 if (!result) {
-                    return fetch(event.request).then(function (res) {
+                    return fetch(event.request, fetchOptions).then(function (res) {
                         caches.open('mpad-cache-v0.5').then(function (cache) {
                             cache.put(event.request, res);
                         });
                         return res.clone();
-                    });
+                    }).catch(function () { return; });
                 }
                 return result;
             })
@@ -288,7 +311,7 @@ self.addEventListener('fetch', function (event) {
          * when offline.
          */
         event.respondWith(
-            fetch(event.request).then(function (res) {
+            fetch(event.request, fetchOptions).then(function (res) {
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
@@ -296,7 +319,7 @@ self.addEventListener('fetch', function (event) {
             }).catch(function () {
                 return caches.match(event.request).then(function (result) {
                     if (!result) {
-                        return fetch(event.request).then(function (res) {
+                        return fetch(event.request, fetchOptions).then(function (res) {
                             caches.open('mpad-cache-v0.5').then(function (cache) {
                                 cache.put(event.request, res);
                             });
@@ -307,8 +330,9 @@ self.addEventListener('fetch', function (event) {
                             });
                         });
                     }
-                    if (url.pathname.match(/\/user/)) return result;
-                    offlineMsgSetter(url, 'offline-message');
+                    if (url.pathname.match(/\/user/)) return result; // user requests should not trigger offline message
+                    // other requests should trigger offline message
+                    offlineMsg();
                     return result;
                 });
             })
