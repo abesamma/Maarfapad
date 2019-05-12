@@ -14,7 +14,7 @@ const offlineSaveMsg = `Something went wrong during the save operation.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.7.6 installed');
+    console.log('Mpad service worker version 0.8.6 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -107,10 +107,20 @@ self.addEventListener('fetch', function (event) {
             }).catch(function (err) {
                 console.error('Failed to cache user. Error:', err);
             });
+            return res.clone().json();
         }).catch(function () {
             return;
         });
     };
+
+    function cacheAllWikis (json) {
+        let wikis = Object.keys(json._attachments);
+        wikis.forEach(function (wiki) {
+            caches.open('mpad-cache-v0.5').then(function (cache) {
+                cache.add('/wiki/' + wiki);
+            });
+        });
+    }
 
     function fetchAndCacheWiki () {
         return fetch(event.request, fetchOptions).then(function (res) {
@@ -188,8 +198,16 @@ self.addEventListener('fetch', function (event) {
         event.respondWith(
             caches.match('/user').then(function (cachedUser) {
                 if (!cachedUser) {
-                    cacheUser();
-                    return fetchAndCacheWiki();
+                    cacheUser().then(function (json) {
+                        cacheAllWikis(json);
+                    });
+                    return fetch(event.request, fetchOptions).then(function (res) {
+                        return res;
+                    }).catch(function () {
+                        return caches.match('/offline').then(function (offline) {
+                            return offline;
+                        });
+                    });
                 }
                 return cachedUser.json().then(function (cachedJson) {
                     return fetch('/user', fetchOptions).then(function (res) {
