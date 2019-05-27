@@ -314,6 +314,7 @@ self.addEventListener('fetch', function (event) {
          */
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (url.pathname.match(/\/user/)) return res;
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
