@@ -41,7 +41,7 @@ var db = nano.db.use('maarfapad');
 
 // For logging errors
 function logError (err) {
-  console.err('Error', err);
+  console.error('Error', err);
 };
 
 var app = express();
