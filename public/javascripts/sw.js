@@ -14,7 +14,7 @@ const offlineSaveMsg = `Something went wrong during the save operation.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.8.6 installed');
+    console.log('Mpad service worker version 0.8.7 installed');
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll([
@@ -59,7 +59,7 @@ self.addEventListener('fetch', function (event) {
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
     let fetchOptions = {
-        credential: 'include'
+        credentials: 'include'
     };
 
     function offlineMsg(msg='You are currently working offline.') {
