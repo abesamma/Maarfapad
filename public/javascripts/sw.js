@@ -296,7 +296,7 @@ self.addEventListener('fetch', function (event) {
         event.respondWith(
             caches.match(event.request).then(function (result) {
                 if (!result) {
-                    return fetch(event.request, fetchOptions).then(function (res) {
+                    return fetch(event.request).then(function (res) {
                         caches.open('mpad-cache-v0.5').then(function (cache) {
                             cache.put(event.request, res);
                         });
