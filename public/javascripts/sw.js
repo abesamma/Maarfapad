@@ -14,7 +14,6 @@ const offlineSaveMsg = `Something went wrong during the save operation.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.9.0 installed');
 	const urls = [
                 'https://fonts.googleapis.com/icon?family=Material+Icons',
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
@@ -35,7 +34,8 @@ self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll(urls.map(url => new Request(url, { credentials: 'same-origin' })));
-        })
+        }).then(console.log('Mpad service worker version 0.9.0 installed'))
+		.catch(console.error("Mpad service worker version 0.9.0 failed to install"));
     );
 });
 
