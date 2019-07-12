@@ -14,10 +14,8 @@ const offlineSaveMsg = `Something went wrong during the save operation.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.8.7 installed');
-    event.waitUntil(
-        caches.open('mpad-cache-v0.5').then(function (cache) {
-            cache.addAll([
+    console.log('Mpad service worker version 0.8.9 installed');
+	const urls = [
                 'https://fonts.googleapis.com/icon?family=Material+Icons',
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
                 'https://code.jquery.com/jquery-2.1.1.min.js',
@@ -34,7 +32,10 @@ self.addEventListener('install', function (event) {
                 '/favicon.ico',
                 '/images/demo.png',
                 '/manifest.json'
-            ]);
+            ];
+    event.waitUntil(
+        caches.open('mpad-cache-v0.5').then(function (cache) {
+            cache.addAll(urls.map(url => new Request(url, { credentials: 'same-origin' })));
         })
     );
 });
@@ -59,7 +60,7 @@ self.addEventListener('fetch', function (event) {
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
     let fetchOptions = {
-        credentials: 'include'
+        credentials: 'same-origin'
     };
 
     function offlineMsg(msg='You are currently working offline.') {
