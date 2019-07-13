@@ -35,7 +35,7 @@ self.addEventListener('install', function (event) {
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll(urls.map(url => new Request(url, { credentials: 'same-origin' })));
         }).then(console.log('Mpad service worker version 0.9.0 installed'))
-		.catch(console.error("Mpad service worker version 0.9.0 failed to install"));
+		.catch(console.error("Mpad service worker version 0.9.0 failed to install"))
     );
 });
 
