@@ -286,7 +286,7 @@ self.addEventListener('fetch', function (event) {
                     'statusText': 'OK',
                     'headers': new Headers({
                         'Location': url.origin + '/wiki/home'
-                    });
+                    })
                 });
             })
         );
