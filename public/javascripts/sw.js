@@ -244,7 +244,7 @@ self.addEventListener('fetch', function (event) {
                 });
             }).catch(function () {
                 /*Incase the /user url does not exist in cache
-                * then default to network, or offline page if
+                * then default to network, or offline page
                 * if offline
                 */
                 return fetch(event.request, fetchOptions) || caches.match('/offline').then(function (offline) {
@@ -258,7 +258,10 @@ self.addEventListener('fetch', function (event) {
             fetch(event.request, fetchOptions).then(function (res) {
                 if (res.status >= 400) return reject();
                 clearCache();
-                return res;
+                caches.open('mpad-cache-v0.5').then(function (cache) {
+                    cache.put(event.request, res);
+                });
+                return res.clone();
             }).catch(function () {
                 clearCache();
                 return caches.match(event.request).then(function (result) {
@@ -283,7 +286,7 @@ self.addEventListener('fetch', function (event) {
                     'statusText': 'OK',
                     'headers': new Headers({
                         'Location': url.origin + '/wiki/home'
-                    })
+                    });
                 });
             })
         );
