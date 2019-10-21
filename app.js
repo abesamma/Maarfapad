@@ -3,6 +3,7 @@ var path = require('path');
 var request = require('request');
 var shortid = require('shortid');
 var logger = require('morgan');
+var compression = require('compression');
 var session = require('express-session');
 var CouchConnect = require('connect-couchdb')(session);
 var bodyParser = require('body-parser');
@@ -40,7 +41,7 @@ var db = nano.db.use('maarfapad');
 
 // For logging errors
 function logError (err) {
-  console.log('Error', err);
+  console.error('Error', err);
 };
 
 var app = express();
@@ -73,6 +74,7 @@ if (process.env.NODE_ENV === 'development') {
   }));
 }
 
+app.use(compression());
 app.use(bodyParser.raw({ type: 'text/html', limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());

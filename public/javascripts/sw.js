@@ -14,10 +14,7 @@ const offlineSaveMsg = `Something went wrong during the save operation.
                 by deselecting Maarfapad as your default saver and selecting 'Others' instead.`;
 
 self.addEventListener('install', function (event) {
-    console.log('Mpad service worker version 0.8.6 installed');
-    event.waitUntil(
-        caches.open('mpad-cache-v0.5').then(function (cache) {
-            cache.addAll([
+	const urls = [
                 'https://fonts.googleapis.com/icon?family=Material+Icons',
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css',
                 'https://code.jquery.com/jquery-2.1.1.min.js',
@@ -27,15 +24,18 @@ self.addEventListener('install', function (event) {
                 '/stylesheets/style.css',
                 '/javascripts/index.js',
                 '/offline',
-                '/login',
                 '/about',
                 '/signup',
                 '/recovery',
                 '/favicon.ico',
                 '/images/demo.png',
                 '/manifest.json'
-            ]);
-        })
+            ];
+    event.waitUntil(
+        caches.open('mpad-cache-v0.5').then(function (cache) {
+            cache.addAll(urls.map(url => new Request(url, { credentials: 'same-origin' })));
+        }).then(console.log('Mpad service worker version 0.9.0 installed'))
+		.catch(console.error("Mpad service worker version 0.9.0 failed to install"))
     );
 });
 
@@ -59,7 +59,7 @@ self.addEventListener('fetch', function (event) {
     let regex = new RegExp(/^\/wiki\/[ab-z,AB-Z,0-9]+$/); //to test if wiki pathname
     let assetWhitelistRegEx = new RegExp(/(offline|images|login|about|index.js|css|fonts|icon|favicon.ico|manifest.json|sw.js|jquery-2.1.1|ajax)/g);
     let fetchOptions = {
-        credentials: 'include'
+        credentials: 'same-origin'
     };
 
     function offlineMsg(msg='You are currently working offline.') {
@@ -244,7 +244,7 @@ self.addEventListener('fetch', function (event) {
                 });
             }).catch(function () {
                 /*Incase the /user url does not exist in cache
-                * then default to network, or offline page if
+                * then default to network, or offline page
                 * if offline
                 */
                 return fetch(event.request, fetchOptions) || caches.match('/offline').then(function (offline) {
@@ -258,7 +258,10 @@ self.addEventListener('fetch', function (event) {
             fetch(event.request, fetchOptions).then(function (res) {
                 if (res.status >= 400) return reject();
                 clearCache();
-                return res;
+                caches.open('mpad-cache-v0.5').then(function (cache) {
+                    cache.put(event.request, res);
+                });
+                return res.clone();
             }).catch(function () {
                 clearCache();
                 return caches.match(event.request).then(function (result) {
@@ -314,6 +317,7 @@ self.addEventListener('fetch', function (event) {
          */
         event.respondWith(
             fetch(event.request, fetchOptions).then(function (res) {
+                if (url.pathname.match(/\/user/)) return res;
                 caches.open('mpad-cache-v0.5').then(function (cache) {
                     cache.put(event.request, res);
                 });
