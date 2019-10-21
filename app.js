@@ -269,7 +269,7 @@ app.post('/create_user', function (req, res, next) {
 
 // change email
 app.post('/change_email', function (req, res) {
-  if (req.user) {
+  if (req.isAuthenticated()) {
     var id = req.user.id
     var data = req.body.newemail;
     db.view('user', 'verify', { 'key': data }, function (err, body) {
@@ -297,7 +297,7 @@ app.post('/change_email', function (req, res) {
 
 // change password
 app.post('/change_password', function (req, res) {
-  if (req.user) {
+  if (req.isAuthenticated()) {
     var id = req.user.id
     var verify = req.body.verifypass
     var _new = req.body.newpass
@@ -376,7 +376,7 @@ app.post('/login', passport.authenticate('local', {
 
 // account deletion
 app.get('/delete_account', function (req, res) {
-  if (req.user) {
+  if (req.isAuthenticated()) {
     db.show('user', 'getUser', req.user.id, function (err, body) {
       if (!err) {
         var docRev = body._rev;
@@ -404,7 +404,7 @@ app.get('/delete_account', function (req, res) {
 app.get('/wiki/:name', function (req, res) {
   var name = req.params.name
   if (req.cookies['mpad-offline'] === 'true') return res.redirect('/login');
-  if (req.user) {
+  if (req.isAuthenticated()) {
     var userid = req.user.id
     db.attachment.get(userid, name, function (err, body) {
       if (!err) {
@@ -423,7 +423,7 @@ app.get('/wiki/:name', function (req, res) {
 app.put('/wiki/:name/:rev', function (req, res) {
   var name = req.params.name;
   var revision = req.params.rev;
-  if (req.user) {
+  if (req.isAuthenticated()) {
     var userid = req.user.id
     db.attachment.insert(userid, name, req.body, 'text/html', { rev: revision }, function (err, body) {
       if (!err) {
@@ -469,7 +469,7 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
       }
     });
   };
-  if (req.user) {
+  if (req.isAuthenticated()) {
     switch (type) {
       case 'empty': 
         createWiki(userid,name,revision,EMPTY_URL);
@@ -483,7 +483,7 @@ app.get('/:wikiType/:wikiName/:rev', function (req, res) {
 app.delete('/wiki/:name/:rev', function (req, res) {
   var name = req.params.name;
   var revision = req.params.rev;
-  if (req.user) {
+  if (req.isAuthenticated()) {
     var userid = req.user.id;
     db.attachment.destroy(userid, name, { rev: revision }, function (err, body) {
       if (!err) {
@@ -501,7 +501,7 @@ app.delete('/wiki/:name/:rev', function (req, res) {
 
 // send a doc snapshot for wikiManager
 app.get('/user', function (req, res) {
-  if (req.user) {
+  if (req.isAuthenticated()) {
     db.show('user', 'getUser', req.user.id, function (err, body) {
       if (!err) {
         res.send(body);
