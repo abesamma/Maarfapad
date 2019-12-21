@@ -14,7 +14,6 @@ var auth = require('passport-local-authenticate');
 var flash = require('connect-flash');
 var nodemailer = require("nodemailer");
 var helmet = require('helmet');
-var emailCheck = require('email-check');
 var expressSanitized = require('express-sanitize-escape');
 var config;
 if (process.env.NODE_ENV === 'development') {
@@ -205,57 +204,44 @@ app.post('/create_user', function (req, res, next) {
             subject: 'Maarfapad sign up',
             html: `<p>You are all set!</p><p>Get the latest updates via <a href='https://abesamma.github.io/maarfapad-blog/index.html'>Maarfapad's blog.</a></p> <a href='http://maarfapad.com'>Click here</a> to login</p>`
           };
-          // check if email address exists and can receive emails
-          emailCheck(req.body.email)
-            .then(result => {
-              if (result === true) {
-                // hash and salt pass
-                auth.hash(req.body.password, function (err, hashed) {
-                  req.body.password = hashed; // replace plain pass with hashed pass
-                  request(EMPTY_URL, function (error, resp, data) {
-                    if (resp.statusMessage === 'OK') {
-                      if (!error) {
-                        db.multipart.insert(
-                          req.body,
-                          [{ name: 'home', data: data, content_type: 'text/html' }],
-                          id,
-                          function (err, body) {
-                            if (!err) {
-                              // email to confirm successful action
-                              smtpTransport.sendMail(mailOptions, function (err, response) {
-                                if (!err) {
-                                  // redirect to login page if successful
-                                  req.flash('login-info', 'Account created successfuly! Please login.');
-                                  res.redirect('/login');
-                                } else {
-                                  logError(err);
-                                  req.flash('signup-info', 'An error occured. Please try again later');
-                                  res.redirect('/signup');
-                                }
-                              });
-                            }
-                          });
-                      } else {
-                        logError(error);
-                        req.flash('signup-info', 'An error occured. Please try again later');
-                        res.redirect('/signup');
+          // hash and salt pass
+          auth.hash(req.body.password, function (err, hashed) {
+            req.body.password = hashed; // replace plain pass with hashed pass
+            request(EMPTY_URL, function (error, resp, data) {
+              if (resp.statusMessage === 'OK') {
+                if (!error) {
+                  db.multipart.insert(
+                    req.body,
+                    [{ name: 'home', data: data, content_type: 'text/html' }],
+                    id,
+                    function (err, body) {
+                      if (!err) {
+                        // email to confirm successful action
+                        smtpTransport.sendMail(mailOptions, function (err, response) {
+                          if (!err) {
+                            // redirect to login page if successful
+                            req.flash('login-info', 'Account created successfuly! Please login.');
+                            res.redirect('/login');
+                          } else {
+                            logError(err);
+                            req.flash('signup-info', 'An error occured. Please try again later');
+                            res.redirect('/signup');
+                          }
+                        });
                       }
-                    } else {
-                      logError('Failed to retrieve template Wiki from CDN');
-                      req.flash('signup-info', 'Failed to create account. Try again later');
-                      res.redirect('/signup');
-                    }
-                  });
-                });
+                    });
+                } else {
+                  logError(error);
+                  req.flash('signup-info', 'An error occured. Please try again later');
+                  res.redirect('/signup');
+                }
               } else {
-                req.flash('signup-info', 'Something is wrong with the email you supplied.');
+                logError('Failed to retrieve template Wiki from CDN');
+                req.flash('signup-info', 'Failed to create account. Try again later');
                 res.redirect('/signup');
               }
-            }).catch(err => {
-              logError(err);
-              req.flash('signup-info', 'An error occured. Please try again later');
-              res.redirect('/signup');
             });
+          });
         }
       }
     });
