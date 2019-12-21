@@ -224,7 +224,7 @@ app.post('/create_user', function (req, res, next) {
                             res.redirect('/login');
                           } else {
                             logError(err);
-                            req.flash('signup-info', 'An error occured. Please try again later');
+                            req.flash('signup-info', 'Something went wrong with the email address you supplied. Please try signing up again with another email address.');
                             res.redirect('/signup');
                           }
                         });
