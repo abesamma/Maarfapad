@@ -21,7 +21,6 @@ self.addEventListener('install', function (event) {
                 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js',
                 'https://fonts.googleapis.com/css?family=Comfortaa',
                 'https://fonts.googleapis.com/css?family=Comfortaa:300&subset=latin-ext',
-                'https://fonts.googleapis.com/css?family=Mountains+of+Christmas&display=swap',
                 '/stylesheets/style.css',
                 '/javascripts/index.js',
                 '/offline',
@@ -35,8 +34,8 @@ self.addEventListener('install', function (event) {
     event.waitUntil(
         caches.open('mpad-cache-v0.5').then(function (cache) {
             cache.addAll(urls.map(url => new Request(url, { credentials: 'same-origin' })));
-        }).then(console.log('Mpad service worker version 0.9.4 installed'))
-		.catch(console.error("Mpad service worker version 0.9.4 failed to install"))
+        }).then(console.log('Mpad service worker version 0.9.5 installed'))
+		.catch(console.error("Mpad service worker version 0.9.5 failed to install"))
     );
 });
 
