@@ -14,7 +14,7 @@ Please note that, depending on what you want to do, you might want to fiddle aro
 2. The CouchDB server address for long-term storage of the wiki files and otther app data
 3. Configure the email client to send service emails for things like password resets
 
-The `dev.secret.json` file contains generic localhost addresses and whatnot for development purposes. Use the `secret.json` file to add production credentials. I chose this setup because Cloudnode allowed for private git repositories that safely handle these secret JSON files. Needless to say, **don't persist secrets to your public Github repo**!
+The `dev.secret.json` file contains generic localhost addresses and whatnot for development purposes. Use the `secret.json` file to add production credentials. I chose this setup because Cloudnode allows for private git repositories that safely handle these secret JSON files. Needless to say, **don't persist secrets to your public Github repo**!
 
 The `editions.js` file exports a URL pointing to an HTML TiddlyWiki template that is used by the app to create new wikis for the user. You can add more if you wish! These are used in `app.js`.
 
