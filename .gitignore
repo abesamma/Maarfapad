@@ -9,7 +9,6 @@ ehthumbs.db
 Thumbs.db
 .vscode
 
-dev.secret.json
 *.log
 *.html
 
