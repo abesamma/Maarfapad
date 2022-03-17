@@ -42,9 +42,9 @@ This app uses PUG as its view template engine. The server code uses Expressjs fr
 
 1. It allowed the app to be pretty much offline first, or atleast as much as possible.
 2. If wiki saves (the app saves the whole wiki as a single HTML blob) fail, then the app persists the blob into the browser cache. Of course, this is only temporary and the app tells you as much
-3. The only problem that used to happen was rare but annoying episodes of the app presenting a stale cache as a current view. I had the service worker always check the revision cached against the one in CouchDB to decide if it should default to fetch from the database or the browser cache. I never got a chance to address these staleness hiccups completely (partly because it was infrequent) so if it happens, just logout of the app and log back in. This causes the servier to reset credentials and delete the cached content (this tends to happen when you revisit the app on a device long after the credentials had expired, and it would warn you anyway that that is the case).
+3. The only problem that used to happen was rare but annoying episodes of the app presenting a stale cache as a current view. I had the service worker always check the revision cached against the one in CouchDB to decide if it should default to fetch from the database or the browser cache. I never got a chance to address these staleness hiccups completely (partly because it was infrequent) so if it happens, just logout of the app and log back in. This causes the server to reset credentials and delete the cached content (this tends to happen when you revisit the app on a device long after the credentials had expired, and it would warn you anyway that that is the case).
 4. Sign ups and login handling is done using Passportjs middleware
-5. Note that I artificially limited the number of wikis you could create per account to 2 for the sake of evaluating its performance. I have never increased it beyond that but you're welcomed to.
+5. Note that I deliberately limited the number of wikis you could create per account to 2 for the sake of evaluating its performance. I have never increased it beyond that but you're welcomed to.
 6. Finally, this whole thing is a nice progressive web app!
 
 Have fun 😄
